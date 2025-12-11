@@ -36,8 +36,23 @@ python main.py
 | `model` | string | 是 | 模型名称 |
 | `messages` | array | 是 | 消息数组 |
 | `stream` | boolean | 否 | 是否流式输出，默认 false |
+| `image` | string | 否 | Base64 编码的图片（图生视频） |
+| `video` | string | 否 | Base64 编码的视频或视频 URL（角色创建） |
+| `remix_target_id` | string | 否 | Sora 分享链接 ID（Remix 模式） |
 | `style_id` | string | 否 | 视频风格 |
 | `character_options` | object | 否 | 角色创建选项 |
+
+### character_options 参数
+
+角色创建时的可选配置：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `timestamps` | string | 视频时间戳，用于提取角色帧，格式如 `"0,3"` |
+| `username` | string | 自定义角色用户名 |
+| `display_name` | string | 自定义角色显示名称 |
+| `instruction_set` | string | 角色指令集 |
+| `safety_instruction_set` | string | 安全指令集 |
 
 ### 支持的模型
 
@@ -501,7 +516,9 @@ curl -X POST "http://localhost:8000/v1/chat/completions" \
 
 ### 6. 创建角色
 
-**请求**
+通过上传视频创建角色卡，可用于后续视频生成中引用角色。
+
+**基础请求**
 ```json
 {
   "model": "sora-video-landscape-10s",
@@ -523,6 +540,78 @@ curl -X POST "http://localhost:8000/v1/chat/completions" \
     "username": "my_character",
     "display_name": "我的角色"
   }
+}
+```
+
+**完整参数请求**
+```json
+{
+  "model": "sora-video-landscape-10s",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "https://example.com/video.mp4"
+          }
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "character_options": {
+    "timestamps": "0,3",
+    "username": "cat_character",
+    "display_name": "可爱的猫咪",
+    "instruction_set": "A cute orange cat with fluffy fur",
+    "safety_instruction_set": "family-friendly content only"
+  }
+}
+```
+
+**curl**
+```bash
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+  -H "Authorization: Bearer han1234" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sora-video-landscape-10s",
+    "messages": [{"role": "user", "content": [{"type": "video_url", "video_url": {"url": "https://example.com/video.mp4"}}]}],
+    "stream": true,
+    "character_options": {
+      "timestamps": "0,3",
+      "username": "my_cat",
+      "display_name": "我的猫咪"
+    }
+  }'
+```
+
+**character_options 参数说明**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `timestamps` | string | 视频时间戳（秒），用于提取角色帧，格式 `"起始,结束"`，如 `"0,3"` |
+| `username` | string | 角色用户名，用于在提示词中引用，如 `@my_cat` |
+| `display_name` | string | 角色显示名称 |
+| `instruction_set` | string | 角色描述/指令集，描述角色外观特征 |
+| `safety_instruction_set` | string | 安全指令集，限制生成内容类型 |
+
+**使用创建的角色**
+
+创建角色后，可以在提示词中使用 `@username` 引用：
+
+```json
+{
+  "model": "sora-video-landscape-10s",
+  "messages": [
+    {
+      "role": "user",
+      "content": "@my_cat 在草地上奔跑"
+    }
+  ],
+  "stream": true
 }
 ```
 
