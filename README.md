@@ -1,7 +1,7 @@
 # 本项目二次开发基于 [sora2api](https://github.com/TheSmallHanCat/sora2api)
 ####
 # 原作者: [TheSmallHanCat](https://github.com/TheSmallHanCat)
-
+# 该项目是二开的项目请谨慎使用
 # Sora2API
 
 OpenAI 兼容的 Sora API 服务
