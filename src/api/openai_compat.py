@@ -243,7 +243,7 @@ async def test_create_video(
 ):
     """[TEST] Create video generation
     
-    Same as /v1/videos but for testing purposes.
+    Same as /v1/videos but uses /nf/pending (v1) for polling instead of /nf/pending/v2.
     """
     try:
         # Check if JSON body
@@ -290,6 +290,7 @@ async def test_create_video(
                 image_data = image_data.split("base64,", 1)[1]
         
         # Non-streaming: collect all chunks and return final result
+        # Use /nf/pending (v1) for polling in test endpoint
         chunks = []
         async for chunk in generation_handler.handle_generation(
             model=final_model,
@@ -297,7 +298,8 @@ async def test_create_video(
             image=image_data,
             remix_target_id=remix_target_id,
             stream=True,  # Internal streaming
-            style_id=style_id
+            style_id=style_id,
+            use_pending_v1=True  # Use /nf/pending (v1) for polling
         ):
             chunks.append(chunk)
         

@@ -248,7 +248,8 @@ class GenerationHandler:
                                remix_target_id: Optional[str] = None,
                                stream: bool = True,
                                character_options: Optional[CharacterOptions] = None,
-                               style_id: Optional[str] = None) -> AsyncGenerator[str, None]:
+                               style_id: Optional[str] = None,
+                               use_pending_v1: bool = False) -> AsyncGenerator[str, None]:
         """Handle generation request
 
         Args:
@@ -260,6 +261,7 @@ class GenerationHandler:
             stream: Whether to stream response
             character_options: Optional character creation options
             style_id: Optional video style (festive, retro, news, selfie, handheld, anime, comic, golden, vintage)
+            use_pending_v1: If True, use /nf/pending (v1) for polling instead of /nf/pending/v2
         """
         start_time = time.time()
 
@@ -438,7 +440,7 @@ class GenerationHandler:
             await self.token_manager.record_usage(token_obj.id, is_video=is_video)
             
             # Poll for results with timeout
-            async for chunk in self._poll_task_result(task_id, token_obj.token, is_video, stream, prompt, token_obj.id):
+            async for chunk in self._poll_task_result(task_id, token_obj.token, is_video, stream, prompt, token_obj.id, use_pending_v1):
                 yield chunk
             
             # Record success
@@ -495,8 +497,13 @@ class GenerationHandler:
             raise e
     
     async def _poll_task_result(self, task_id: str, token: str, is_video: bool,
-                                stream: bool, prompt: str, token_id: int = None) -> AsyncGenerator[str, None]:
-        """Poll for task result with timeout"""
+                                stream: bool, prompt: str, token_id: int = None,
+                                use_pending_v1: bool = False) -> AsyncGenerator[str, None]:
+        """Poll for task result with timeout
+        
+        Args:
+            use_pending_v1: If True, use /nf/pending (v1) for polling instead of /nf/pending/v2
+        """
         # Get timeout from config
         timeout = config.video_timeout if is_video else config.image_timeout
         poll_interval = config.poll_interval
@@ -547,8 +554,11 @@ class GenerationHandler:
 
             try:
                 if is_video:
-                    # Get pending tasks to check progress (use v2)
-                    pending_tasks = await self.sora_client.get_pending_tasks_v2(token)
+                    # Get pending tasks to check progress
+                    if use_pending_v1:
+                        pending_tasks = await self.sora_client.get_pending_tasks(token)
+                    else:
+                        pending_tasks = await self.sora_client.get_pending_tasks_v2(token)
 
                     # Find matching task in pending tasks
                     task_found = False
