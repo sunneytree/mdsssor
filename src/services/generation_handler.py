@@ -547,7 +547,7 @@ class GenerationHandler:
 
             try:
                 if is_video:
-                    # Get pending tasks to check progress (use v2 for detailed progress)
+                    # Get pending tasks to check progress (use v2)
                     pending_tasks = await self.sora_client.get_pending_tasks_v2(token)
 
                     # Find matching task in pending tasks
