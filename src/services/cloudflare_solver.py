@@ -189,25 +189,39 @@ async def solve_cloudflare_challenge(
         失败返回 None
     """
     import concurrent.futures
-    from curl_cffi.requests import Session
+    import urllib.request
+    import json
+    import socket
     
     if not config.cloudflare_solver_enabled or not config.cloudflare_solver_api_url:
-        print("⚠️ Cloudflare Solver API 未配置")
+        print("⚠️ Cloudflare Solver API 未配置或未启用")
         return None
     
     api_url = config.cloudflare_solver_api_url
     
     def _sync_request():
-        """同步请求函数，在独立线程中执行"""
+        """同步请求函数，在独立线程中执行，使用标准库"""
         try:
             print(f"🔄 [线程] 开始请求 Cloudflare Solver API: {api_url}")
-            # 使用 curl_cffi 的同步 Session，设置较短的超时
-            sess = Session(impersonate="chrome110", timeout=15)
-            response = sess.get(api_url)
-            print(f"🔄 [线程] 请求完成，状态码: {response.status_code}")
-            return response
+            # 设置 socket 超时
+            socket.setdefaulttimeout(10)
+            
+            req = urllib.request.Request(api_url)
+            req.add_header('User-Agent', 'Mozilla/5.0')
+            
+            with urllib.request.urlopen(req, timeout=10) as response:
+                status_code = response.getcode()
+                data = json.loads(response.read().decode('utf-8'))
+                print(f"🔄 [线程] 请求完成，状态码: {status_code}")
+                return {"status_code": status_code, "data": data}
+        except urllib.error.URLError as e:
+            print(f"⚠️ [线程] URL错误: {e.reason}")
+            return None
+        except socket.timeout:
+            print(f"⚠️ [线程] Socket超时")
+            return None
         except Exception as e:
-            print(f"⚠️ [线程] Cloudflare Solver API 请求异常: {type(e).__name__}: {e}")
+            print(f"⚠️ [线程] 请求异常: {type(e).__name__}: {e}")
             return None
     
     for attempt in range(1, max_retries + 1):
@@ -215,24 +229,24 @@ async def solve_cloudflare_challenge(
             print(f"🔄 调用 Cloudflare Solver API: {api_url} (尝试 {attempt}/{max_retries})")
             
             # 使用 ThreadPoolExecutor 确保在独立线程中执行
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 try:
-                    # 设置 20 秒超时
-                    response = await asyncio.wait_for(
+                    # 设置 15 秒超时
+                    result = await asyncio.wait_for(
                         loop.run_in_executor(executor, _sync_request),
-                        timeout=20
+                        timeout=15
                     )
                 except asyncio.TimeoutError:
-                    print(f"⚠️ Cloudflare Solver API 请求超时 (20秒)")
+                    print(f"⚠️ Cloudflare Solver API 请求超时 (15秒)")
                     return None
             
-            if response is None:
+            if result is None:
                 print(f"⚠️ Cloudflare Solver API 请求失败")
                 return None
             
-            if response.status_code == 200:
-                data = response.json()
+            if result["status_code"] == 200:
+                data = result["data"]
                 if data.get("success"):
                     cookies = data.get("cookies", {})
                     user_agent = data.get("user_agent")
@@ -247,16 +261,14 @@ async def solve_cloudflare_challenge(
                 else:
                     print(f"⚠️ Cloudflare Solver API 返回失败: {data.get('error')}")
             else:
-                print(f"⚠️ Cloudflare Solver API 请求失败: {response.status_code}")
+                print(f"⚠️ Cloudflare Solver API 请求失败: {result['status_code']}")
         
         except Exception as e:
             print(f"⚠️ Cloudflare Solver API 调用失败: {type(e).__name__}: {e}")
         
         # 如果不是最后一次尝试，等待后重试
         if attempt < max_retries:
-            wait_time = 2
-            print(f"⏳ 等待 {wait_time}s 后重试...")
-            await asyncio.sleep(wait_time)
+            await asyncio.sleep(2)
     
     print(f"❌ Cloudflare Solver API 调用失败")
     return None
