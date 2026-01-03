@@ -111,8 +111,8 @@ async def startup_event():
     await db.init_db()
 
     # Initialize database connection pool for better concurrency
-    await init_pool(db.db_path, pool_size=5)
-    print("✓ Database connection pool initialized (pool_size=5, WAL mode)")
+    await init_pool(db.db_path, read_pool_size=20)
+    print("✓ Database connection pool initialized (read_pool_size=20, WAL mode)")
 
     # Handle database initialization based on startup type
     if is_first_startup:
