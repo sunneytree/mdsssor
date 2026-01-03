@@ -42,7 +42,6 @@ data/*.sqlite
 # OS
 .DS_Store
 Thumbs.db
-test_concurrent.py
 # Logs
 *.log
 
@@ -53,3 +52,6 @@ test_concurrent.py
 # Reference projects
 sora2api-main/
 sora2api/
+
+# Test files
+test_concurrent.py
