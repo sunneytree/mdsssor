@@ -7,7 +7,6 @@ import aiohttp
 import base64
 from ..core.auth import verify_api_key_header
 from ..services.token_manager import TokenManager
-from ..services.webdav_manager import WebDAVManager
 from ..core.database import Database
 
 router = APIRouter()
@@ -16,15 +15,13 @@ router = APIRouter()
 token_manager: TokenManager = None
 db: Database = None
 generation_handler = None
-webdav_manager: WebDAVManager = None
 
-def set_dependencies(tm: TokenManager, database: Database, gh=None, wm: WebDAVManager = None):
+def set_dependencies(tm: TokenManager, database: Database, gh=None):
     """Set dependencies"""
-    global token_manager, db, generation_handler, webdav_manager
+    global token_manager, db, generation_handler
     token_manager = tm
     db = database
     generation_handler = gh
-    webdav_manager = wm
 
 
 # ============================================================
@@ -565,114 +562,3 @@ async def get_task_progress(
         raise HTTPException(status_code=500, detail=f"Failed to get task progress: {str(e)}")
 
 
-# ============================================================
-# WebDAV Proxy Download Endpoint (No authentication required)
-# ============================================================
-
-@router.get("/video/{path:path}")
-async def proxy_video_download(path: str, redirect: bool = True):
-    """Get real download URL from WebDAV server
-    
-    This endpoint uses WebDAV credentials to get the real download URL (302 redirect target)
-    and either redirects the user or returns the URL as JSON.
-    
-    Args:
-        path: Video path on WebDAV server (e.g., task_01kcxp6ezvfh4rhx0v85ejp4rq.mp4)
-        redirect: If True (default), redirect to the real URL. If False, return JSON with URL.
-    
-    Returns:
-        302 redirect to real download URL, or JSON with download_url
-    
-    Example:
-        GET /video/task_01kcxp6ezvfh4rhx0v85ejp4rq.mp4
-        -> 302 redirect to real download URL
-        
-        GET /video/task_01kcxp6ezvfh4rhx0v85ejp4rq.mp4?redirect=false
-        -> {"success": true, "download_url": "https://..."}
-    """
-    from fastapi.responses import RedirectResponse
-    
-    try:
-        if not webdav_manager:
-            raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-        
-        # Get WebDAV config
-        config = await webdav_manager.get_config()
-        if not config.webdav_enabled:
-            raise HTTPException(status_code=503, detail="WebDAV is not enabled")
-        
-        if not config.webdav_url:
-            raise HTTPException(status_code=503, detail="WebDAV URL is not configured")
-        
-        # Build full WebDAV URL
-        upload_path = config.webdav_upload_path or "/video"
-        
-        # If path doesn't start with upload_path, prepend it
-        if not path.startswith(upload_path.lstrip('/')):
-            full_path = f"{upload_path.rstrip('/')}/{path}"
-        else:
-            full_path = f"/{path}"
-        
-        webdav_url = f"{config.webdav_url.rstrip('/')}{full_path}"
-        
-        # Create Basic Auth header
-        auth_str = f"{config.webdav_username}:{config.webdav_password}"
-        auth_bytes = base64.b64encode(auth_str.encode()).decode()
-        
-        # Request WebDAV URL without following redirects to get the real download URL
-        async with aiohttp.ClientSession() as session:
-            headers = {
-                "Authorization": f"Basic {auth_bytes}"
-            }
-            # allow_redirects=False to capture the redirect URL
-            async with session.get(webdav_url, headers=headers, allow_redirects=False) as response:
-                if response.status == 404:
-                    raise HTTPException(status_code=404, detail="Video not found")
-                if response.status == 401:
-                    raise HTTPException(status_code=500, detail="WebDAV authentication failed")
-                
-                # Check for redirect (302, 301, 307, 308)
-                if response.status in (301, 302, 307, 308):
-                    download_url = response.headers.get("Location")
-                    if download_url:
-                        if redirect:
-                            return RedirectResponse(url=download_url, status_code=302)
-                        else:
-                            return {
-                                "success": True,
-                                "download_url": download_url
-                            }
-                    else:
-                        raise HTTPException(status_code=500, detail="No redirect URL found")
-                
-                # If no redirect, the WebDAV server returns the file directly
-                # In this case, we need to stream it
-                if response.status == 200:
-                    # For direct file response, we need to stream it
-                    async def stream_video():
-                        async for chunk in response.content.iter_chunked(65536):
-                            yield chunk
-                    
-                    content_type = "video/mp4"
-                    if path.endswith(".webm"):
-                        content_type = "video/webm"
-                    elif path.endswith(".mov"):
-                        content_type = "video/quicktime"
-                    
-                    filename = path.split("/")[-1]
-                    
-                    return StreamingResponse(
-                        stream_video(),
-                        media_type=content_type,
-                        headers={
-                            "Content-Disposition": f'inline; filename="{filename}"',
-                            "Accept-Ranges": "bytes"
-                        }
-                    )
-                
-                raise HTTPException(status_code=response.status, detail=f"Failed to fetch video: HTTP {response.status}")
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get video URL: {str(e)}")

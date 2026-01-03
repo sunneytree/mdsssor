@@ -1,7 +1,9 @@
 """Proxy management module"""
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pathlib import Path
 import asyncio
+import aiohttp
+from datetime import datetime
 from ..core.database import Database
 from ..core.models import ProxyConfig
 
@@ -14,6 +16,7 @@ class ProxyManager:
         self._pool_index: int = 0
         self._pool_lock = asyncio.Lock()
         self._proxy_file_path = Path(__file__).parent.parent.parent / "data" / "proxy.txt"
+        self._proxy_status: Dict[str, dict] = {}  # 代理状态缓存
     
     def _load_proxy_pool(self) -> List[str]:
         """Load proxy list from data/proxy.txt"""
@@ -127,3 +130,145 @@ class ProxyManager:
                 else:
                     print(f"   Example format: {first_proxy}")
         return len(self._proxy_pool)
+
+    async def test_single_proxy(self, proxy_url: str, timeout: int = 10) -> dict:
+        """Test a single proxy
+        
+        Args:
+            proxy_url: Proxy URL to test
+            timeout: Request timeout in seconds
+            
+        Returns:
+            dict with success, latency, error fields
+        """
+        start_time = datetime.now()
+        test_url = "https://httpbin.org/ip"
+        
+        try:
+            connector = aiohttp.TCPConnector(ssl=False)
+            async with aiohttp.ClientSession(connector=connector) as session:
+                async with session.get(
+                    test_url,
+                    proxy=proxy_url,
+                    timeout=aiohttp.ClientTimeout(total=timeout)
+                ) as response:
+                    if response.status == 200:
+                        latency = (datetime.now() - start_time).total_seconds() * 1000
+                        return {
+                            "success": True,
+                            "latency": round(latency, 2),
+                            "error": None
+                        }
+                    else:
+                        return {
+                            "success": False,
+                            "latency": None,
+                            "error": f"HTTP {response.status}"
+                        }
+        except asyncio.TimeoutError:
+            return {
+                "success": False,
+                "latency": None,
+                "error": "连接超时"
+            }
+        except aiohttp.ClientProxyConnectionError as e:
+            return {
+                "success": False,
+                "latency": None,
+                "error": f"代理连接失败: {str(e)}"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "latency": None,
+                "error": str(e)
+            }
+
+    async def test_all_proxies(self, remove_invalid: bool = False) -> dict:
+        """Test all proxies in the pool
+        
+        Args:
+            remove_invalid: If True, remove invalid proxies from the pool file
+            
+        Returns:
+            dict with total, valid, invalid counts and details
+        """
+        proxies = self._load_proxy_pool()
+        if not proxies:
+            return {
+                "total": 0,
+                "valid": 0,
+                "invalid": 0,
+                "removed": 0,
+                "results": []
+            }
+        
+        results = []
+        valid_proxies = []
+        
+        for proxy in proxies:
+            result = await self.test_single_proxy(proxy)
+            result["proxy"] = self._mask_proxy(proxy)
+            result["proxy_full"] = proxy  # 保留完整代理用于后续处理
+            results.append(result)
+            
+            if result["success"]:
+                valid_proxies.append(proxy)
+            
+            # 更新状态缓存
+            self._proxy_status[proxy] = {
+                "success": result["success"],
+                "latency": result["latency"],
+                "error": result["error"],
+                "tested_at": datetime.now().isoformat()
+            }
+        
+        removed_count = 0
+        if remove_invalid and len(valid_proxies) < len(proxies):
+            # 重写代理池文件，只保留有效代理
+            removed_count = len(proxies) - len(valid_proxies)
+            await self._save_proxy_pool(valid_proxies)
+            # 重新加载代理池
+            await self.reload_proxy_pool()
+        
+        # 清理结果中的完整代理信息
+        for r in results:
+            del r["proxy_full"]
+        
+        return {
+            "total": len(proxies),
+            "valid": len(valid_proxies),
+            "invalid": len(proxies) - len(valid_proxies),
+            "removed": removed_count,
+            "results": results
+        }
+
+    def _mask_proxy(self, proxy_url: str) -> str:
+        """Mask proxy credentials for display"""
+        if "@" in proxy_url:
+            parts = proxy_url.split("@")
+            protocol_and_creds = parts[0]
+            host_part = parts[1]
+            # 只显示协议和主机部分
+            if "://" in protocol_and_creds:
+                protocol = protocol_and_creds.split("://")[0]
+                return f"{protocol}://***@{host_part}"
+            return f"***@{host_part}"
+        return proxy_url
+
+    async def _save_proxy_pool(self, proxies: List[str]):
+        """Save proxy list to file"""
+        try:
+            with open(self._proxy_file_path, "w", encoding="utf-8") as f:
+                f.write("# 代理池配置文件\n")
+                f.write("# 每行一个代理地址，支持 HTTP 和 SOCKS5 格式\n")
+                f.write("# 以 # 开头的行为注释\n\n")
+                for proxy in proxies:
+                    f.write(f"{proxy}\n")
+            print(f"✅ Proxy pool saved: {len(proxies)} proxies")
+        except Exception as e:
+            print(f"⚠️ Failed to save proxy pool: {e}")
+
+    def get_proxy_status(self) -> Dict[str, dict]:
+        """Get cached proxy status"""
+        return self._proxy_status

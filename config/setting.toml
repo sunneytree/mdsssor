@@ -50,13 +50,4 @@ at_auto_refresh_enabled = false
 # Cloudflare Solver API 配置
 # 当检测到 429 Cloudflare challenge 时，自动请求此 API 获取 cf_clearance
 solver_enabled = true
-solver_api_url = "http://cloudflare-solver:8000/v1/challenge"
-
-[webdav]
-webdav_enabled = false
-webdav_url = ""
-webdav_username = ""
-webdav_password = ""
-webdav_upload_path = "/video"
-auto_delete_enabled = false
-auto_delete_days = 30
+solver_api_url = "http://64.23.171.147:8005/"

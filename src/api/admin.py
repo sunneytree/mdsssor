@@ -9,7 +9,6 @@ from ..core.config import config
 from ..services.token_manager import TokenManager
 from ..services.proxy_manager import ProxyManager
 from ..services.concurrency_manager import ConcurrencyManager
-from ..services.webdav_manager import WebDAVManager
 from ..core.database import Database
 from ..core.models import Token, AdminConfig, ProxyConfig
 
@@ -21,20 +20,18 @@ proxy_manager: ProxyManager = None
 db: Database = None
 generation_handler = None
 concurrency_manager: ConcurrencyManager = None
-webdav_manager: WebDAVManager = None
 
 # Store active admin tokens (in production, use Redis or database)
 active_admin_tokens = set()
 
-def set_dependencies(tm: TokenManager, pm: ProxyManager, database: Database, gh=None, cm: ConcurrencyManager = None, wm: WebDAVManager = None):
+def set_dependencies(tm: TokenManager, pm: ProxyManager, database: Database, gh=None, cm: ConcurrencyManager = None):
     """Set dependencies"""
-    global token_manager, proxy_manager, db, generation_handler, concurrency_manager, webdav_manager
+    global token_manager, proxy_manager, db, generation_handler, concurrency_manager
     token_manager = tm
     proxy_manager = pm
     db = database
     generation_handler = gh
     concurrency_manager = cm
-    webdav_manager = wm
 
 def verify_admin_token(authorization: str = Header(None)):
     """Verify admin token from Authorization header"""
@@ -66,6 +63,7 @@ class AddTokenRequest(BaseModel):
     st: Optional[str] = None  # Session Token (optional, for storage)
     rt: Optional[str] = None  # Refresh Token (optional, for storage)
     client_id: Optional[str] = None  # Client ID (optional)
+    proxy_url: Optional[str] = None  # Proxy URL (optional)
     remark: Optional[str] = None
     image_enabled: bool = True  # Enable image generation
     video_enabled: bool = True  # Enable video generation
@@ -86,6 +84,7 @@ class UpdateTokenRequest(BaseModel):
     st: Optional[str] = None
     rt: Optional[str] = None
     client_id: Optional[str] = None  # Client ID
+    proxy_url: Optional[str] = None  # Proxy URL
     remark: Optional[str] = None
     image_enabled: Optional[bool] = None  # Enable image generation
     video_enabled: Optional[bool] = None  # Enable video generation
@@ -97,6 +96,8 @@ class ImportTokenItem(BaseModel):
     access_token: str  # Access Token (AT)
     session_token: Optional[str] = None  # Session Token (ST)
     refresh_token: Optional[str] = None  # Refresh Token (RT)
+    proxy_url: Optional[str] = None  # Proxy URL (optional)
+    remark: Optional[str] = None  # Remark (optional)
     is_active: bool = True  # Active status
     image_enabled: bool = True  # Enable image generation
     video_enabled: bool = True  # Enable video generation
@@ -180,6 +181,7 @@ async def get_tokens(token: str = Depends(verify_admin_token)) -> List[dict]:
             "st": token.st,  # 完整的Session Token
             "rt": token.rt,  # 完整的Refresh Token
             "client_id": token.client_id,  # Client ID
+            "proxy_url": token.proxy_url,  # Proxy URL
             "email": token.email,
             "name": token.name,
             "remark": token.remark,
@@ -222,6 +224,7 @@ async def add_token(request: AddTokenRequest, token: str = Depends(verify_admin_
             st=request.st,
             rt=request.rt,
             client_id=request.client_id,
+            proxy_url=request.proxy_url,
             remark=request.remark,
             update_if_exists=False,
             image_enabled=request.image_enabled,
@@ -453,6 +456,8 @@ async def import_tokens(request: ImportTokensRequest, token: str = Depends(verif
                     token=import_item.access_token,
                     st=import_item.session_token,
                     rt=import_item.refresh_token,
+                    proxy_url=import_item.proxy_url,
+                    remark=import_item.remark,
                     image_enabled=import_item.image_enabled,
                     video_enabled=import_item.video_enabled,
                     image_concurrency=import_item.image_concurrency,
@@ -474,6 +479,8 @@ async def import_tokens(request: ImportTokensRequest, token: str = Depends(verif
                     token_value=import_item.access_token,
                     st=import_item.session_token,
                     rt=import_item.refresh_token,
+                    proxy_url=import_item.proxy_url,
+                    remark=import_item.remark,
                     update_if_exists=False,
                     image_enabled=import_item.image_enabled,
                     video_enabled=import_item.video_enabled,
@@ -507,7 +514,7 @@ async def update_token(
     request: UpdateTokenRequest,
     token: str = Depends(verify_admin_token)
 ):
-    """Update token (AT, ST, RT, remark, image_enabled, video_enabled, concurrency limits)"""
+    """Update token (AT, ST, RT, proxy_url, remark, image_enabled, video_enabled, concurrency limits)"""
     try:
         await token_manager.update_token(
             token_id=token_id,
@@ -515,6 +522,7 @@ async def update_token(
             st=request.st,
             rt=request.rt,
             client_id=request.client_id,
+            proxy_url=request.proxy_url,
             remark=request.remark,
             image_enabled=request.image_enabled,
             video_enabled=request.video_enabled,
@@ -994,20 +1002,34 @@ async def activate_sora2(
 # Logs endpoints
 @router.get("/api/logs")
 async def get_logs(limit: int = 100, token: str = Depends(verify_admin_token)):
-    """Get recent logs with token email"""
+    """Get recent logs with token email and task progress"""
     logs = await db.get_recent_logs(limit)
-    return [{
-        "id": log.get("id"),
-        "token_id": log.get("token_id"),
-        "token_email": log.get("token_email"),
-        "token_username": log.get("token_username"),
-        "operation": log.get("operation"),
-        "status_code": log.get("status_code"),
-        "duration": log.get("duration"),
-        "request_body": log.get("request_body"),
-        "response_body": log.get("response_body"),
-        "created_at": log.get("created_at")
-    } for log in logs]
+    result = []
+    for log in logs:
+        log_data = {
+            "id": log.get("id"),
+            "token_id": log.get("token_id"),
+            "token_email": log.get("token_email"),
+            "token_username": log.get("token_username"),
+            "operation": log.get("operation"),
+            "status_code": log.get("status_code"),
+            "duration": log.get("duration"),
+            "created_at": log.get("created_at"),
+            "request_body": log.get("request_body"),
+            "response_body": log.get("response_body"),
+            "task_id": log.get("task_id")
+        }
+
+        # If task_id exists and status is in-progress, get task progress
+        if log.get("task_id") and log.get("status_code") == -1:
+            task = await db.get_task(log.get("task_id"))
+            if task:
+                log_data["progress"] = task.progress
+                log_data["task_status"] = task.status
+
+        result.append(log_data)
+
+    return result
 
 # Cache config endpoints
 @router.post("/api/cache/config")
@@ -1348,184 +1370,6 @@ async def get_token_sora_characters(
         raise HTTPException(status_code=500, detail=f"Failed to get characters: {str(e)}")
 
 
-# WebDAV config endpoints
-class UpdateWebDAVConfigRequest(BaseModel):
-    webdav_enabled: Optional[bool] = None
-    webdav_url: Optional[str] = None
-    webdav_username: Optional[str] = None
-    webdav_password: Optional[str] = None
-    webdav_upload_path: Optional[str] = None
-    auto_delete_enabled: Optional[bool] = None
-    auto_delete_days: Optional[int] = None
-
-@router.get("/api/webdav/config")
-async def get_webdav_config(token: str = Depends(verify_admin_token)):
-    """Get WebDAV configuration"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    config = await webdav_manager.get_config()
-    return {
-        "success": True,
-        "config": {
-            "webdav_enabled": config.webdav_enabled,
-            "webdav_url": config.webdav_url,
-            "webdav_username": config.webdav_username,
-            "webdav_password": config.webdav_password,
-            "webdav_upload_path": config.webdav_upload_path,
-            "auto_delete_enabled": config.auto_delete_enabled,
-            "auto_delete_days": config.auto_delete_days
-        }
-    }
-
-@router.post("/api/webdav/config")
-async def update_webdav_config(
-    request: UpdateWebDAVConfigRequest,
-    token: str = Depends(verify_admin_token)
-):
-    """Update WebDAV configuration"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    try:
-        update_data = {}
-        if request.webdav_enabled is not None:
-            update_data["enabled"] = request.webdav_enabled
-        if request.webdav_url is not None:
-            update_data["url"] = request.webdav_url
-        if request.webdav_username is not None:
-            update_data["username"] = request.webdav_username
-        if request.webdav_password is not None:
-            update_data["password"] = request.webdav_password
-        if request.webdav_upload_path is not None:
-            update_data["upload_path"] = request.webdav_upload_path
-        if request.auto_delete_enabled is not None:
-            update_data["auto_delete_enabled"] = request.auto_delete_enabled
-        if request.auto_delete_days is not None:
-            update_data["auto_delete_days"] = request.auto_delete_days
-        
-        config = await webdav_manager.update_config(**update_data)
-        return {
-            "success": True,
-            "message": "WebDAV configuration updated",
-            "config": {
-                "webdav_enabled": config.webdav_enabled,
-                "webdav_url": config.webdav_url,
-                "webdav_username": config.webdav_username,
-                "webdav_upload_path": config.webdav_upload_path,
-                "auto_delete_enabled": config.auto_delete_enabled,
-                "auto_delete_days": config.auto_delete_days
-            }
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update WebDAV config: {str(e)}")
-
-@router.post("/api/webdav/test")
-async def test_webdav_connection(token: str = Depends(verify_admin_token)):
-    """Test WebDAV connection"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    result = await webdav_manager.test_connection()
-    return result
-
-@router.get("/api/webdav/files")
-async def list_webdav_files(path: str = None, token: str = Depends(verify_admin_token)):
-    """List files on WebDAV server"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    result = await webdav_manager.list_webdav_files(path)
-    return result
-
-# Video records endpoints
-@router.get("/api/webdav/videos")
-async def get_video_records(
-    limit: int = 100,
-    status: str = None,
-    token: str = Depends(verify_admin_token)
-):
-    """Get video records"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    records = await webdav_manager.get_video_records(limit, status)
-    return {
-        "success": True,
-        "records": [r.model_dump() for r in records]
-    }
-
-@router.get("/api/webdav/videos/stats")
-async def get_video_stats(token: str = Depends(verify_admin_token)):
-    """Get video records statistics"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    stats = await webdav_manager.get_stats()
-    return {
-        "success": True,
-        "stats": stats
-    }
-
-@router.delete("/api/webdav/videos/{record_id}")
-async def delete_video_record(record_id: int, token: str = Depends(verify_admin_token)):
-    """Delete a video from WebDAV"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    result = await webdav_manager.delete_video(record_id)
-    return result
-
-@router.post("/api/webdav/videos/delete-all")
-async def delete_all_videos(token: str = Depends(verify_admin_token)):
-    """Delete all videos from WebDAV"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    result = await webdav_manager.delete_all_videos()
-    return result
-
-@router.post("/api/webdav/videos/auto-delete")
-async def trigger_auto_delete(token: str = Depends(verify_admin_token)):
-    """Trigger auto delete of old videos"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    result = await webdav_manager.auto_delete_old_videos()
-    return result
-
-@router.post("/api/webdav/videos/clear-records")
-async def clear_video_records(token: str = Depends(verify_admin_token)):
-    """Clear all video records from database (does not delete from WebDAV)"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    await webdav_manager.clear_all_records()
-    return {"success": True, "message": "All video records cleared"}
-
-# Upload logs endpoints
-@router.get("/api/webdav/logs")
-async def get_upload_logs(limit: int = 100, token: str = Depends(verify_admin_token)):
-    """Get upload logs"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    logs = await webdav_manager.get_upload_logs(limit)
-    return {
-        "success": True,
-        "logs": logs
-    }
-
-@router.post("/api/webdav/logs/clear")
-async def clear_upload_logs(token: str = Depends(verify_admin_token)):
-    """Clear all upload logs"""
-    if not webdav_manager:
-        raise HTTPException(status_code=500, detail="WebDAV manager not initialized")
-    
-    await webdav_manager.clear_upload_logs()
-    return {"success": True, "message": "All upload logs cleared"}
-
-
 # Proxy pool file endpoints
 @router.get("/api/proxy/pool")
 async def get_proxy_pool(token: str = Depends(verify_admin_token)):
@@ -1572,3 +1416,56 @@ async def update_proxy_pool(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update proxy pool: {str(e)}")
+
+
+# Proxy pool test endpoints
+@router.post("/api/proxy/test")
+async def test_all_proxies(
+    request: dict = None,
+    token: str = Depends(verify_admin_token)
+):
+    """Test all proxies in the pool
+    
+    Args:
+        remove_invalid: If True, remove invalid proxies from the pool file
+    """
+    try:
+        if not proxy_manager:
+            raise HTTPException(status_code=500, detail="Proxy manager not initialized")
+        
+        remove_invalid = request.get("remove_invalid", False) if request else False
+        result = await proxy_manager.test_all_proxies(remove_invalid=remove_invalid)
+        
+        return {
+            "success": True,
+            "message": f"测试完成: {result['valid']} 有效, {result['invalid']} 无效" + 
+                      (f", 已移除 {result['removed']} 个无效代理" if result['removed'] > 0 else ""),
+            **result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to test proxies: {str(e)}")
+
+@router.post("/api/proxy/test-single")
+async def test_single_proxy(
+    request: dict,
+    token: str = Depends(verify_admin_token)
+):
+    """Test a single proxy"""
+    try:
+        if not proxy_manager:
+            raise HTTPException(status_code=500, detail="Proxy manager not initialized")
+        
+        proxy_url = request.get("proxy_url")
+        if not proxy_url:
+            raise HTTPException(status_code=400, detail="proxy_url is required")
+        
+        result = await proxy_manager.test_single_proxy(proxy_url)
+        
+        return {
+            "success": True,
+            **result
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to test proxy: {str(e)}")

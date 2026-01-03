@@ -214,6 +214,7 @@ class Database:
                     ("image_concurrency", "INTEGER DEFAULT -1"),
                     ("video_concurrency", "INTEGER DEFAULT -1"),
                     ("client_id", "TEXT"),
+                    ("proxy_url", "TEXT"),
                 ]
 
                 for col_name, col_type in columns_to_add:
@@ -280,6 +281,21 @@ class Database:
                         try:
                             await db.execute(f"ALTER TABLE proxy_config ADD COLUMN {col_name} {col_type}")
                             print(f"  ✓ Added column '{col_name}' to proxy_config table")
+                        except Exception as e:
+                            print(f"  ✗ Failed to add column '{col_name}': {e}")
+
+            # Check and add missing columns to request_logs table
+            if await self._table_exists(db, "request_logs"):
+                columns_to_add = [
+                    ("task_id", "TEXT"),
+                    ("updated_at", "TIMESTAMP"),
+                ]
+
+                for col_name, col_type in columns_to_add:
+                    if not await self._column_exists(db, "request_logs", col_name):
+                        try:
+                            await db.execute(f"ALTER TABLE request_logs ADD COLUMN {col_name} {col_type}")
+                            print(f"  ✓ Added column '{col_name}' to request_logs table")
                         except Exception as e:
                             print(f"  ✗ Failed to add column '{col_name}': {e}")
 
@@ -382,6 +398,7 @@ class Database:
                     st TEXT,
                     rt TEXT,
                     client_id TEXT,
+                    proxy_url TEXT,
                     remark TEXT,
                     expiry_time TIMESTAMP,
                     is_active BOOLEAN DEFAULT 1,
@@ -446,12 +463,14 @@ class Database:
                 CREATE TABLE IF NOT EXISTS request_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     token_id INTEGER,
+                    task_id TEXT,
                     operation TEXT NOT NULL,
                     request_body TEXT,
                     response_body TEXT,
                     status_code INTEGER NOT NULL,
                     duration FLOAT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP,
                     FOREIGN KEY (token_id) REFERENCES tokens(id)
                 )
             """)
@@ -760,12 +779,12 @@ class Database:
         """Add a new token"""
         async with aiosqlite.connect(self.db_path) as db:
             cursor = await db.execute("""
-                INSERT INTO tokens (token, email, username, name, st, rt, client_id, remark, expiry_time, is_active,
+                INSERT INTO tokens (token, email, username, name, st, rt, client_id, proxy_url, remark, expiry_time, is_active,
                                    plan_type, plan_title, subscription_end, sora2_supported, sora2_invite_code,
                                    sora2_redeemed_count, sora2_total_count, sora2_remaining_count, sora2_cooldown_until,
                                    image_enabled, video_enabled, image_concurrency, video_concurrency)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (token.token, token.email, "", token.name, token.st, token.rt, token.client_id,
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (token.token, token.email, "", token.name, token.st, token.rt, token.client_id, token.proxy_url,
                   token.remark, token.expiry_time, token.is_active,
                   token.plan_type, token.plan_title, token.subscription_end,
                   token.sora2_supported, token.sora2_invite_code,
@@ -901,6 +920,7 @@ class Database:
                           st: Optional[str] = None,
                           rt: Optional[str] = None,
                           client_id: Optional[str] = None,
+                          proxy_url: Optional[str] = None,
                           remark: Optional[str] = None,
                           expiry_time: Optional[datetime] = None,
                           plan_type: Optional[str] = None,
@@ -910,7 +930,7 @@ class Database:
                           video_enabled: Optional[bool] = None,
                           image_concurrency: Optional[int] = None,
                           video_concurrency: Optional[int] = None):
-        """Update token (AT, ST, RT, client_id, remark, expiry_time, subscription info, image_enabled, video_enabled)"""
+        """Update token (AT, ST, RT, client_id, proxy_url, remark, expiry_time, subscription info, image_enabled, video_enabled)"""
         async with aiosqlite.connect(self.db_path) as db:
             # Build dynamic update query
             updates = []
@@ -931,6 +951,10 @@ class Database:
             if client_id is not None:
                 updates.append("client_id = ?")
                 params.append(client_id)
+
+            if proxy_url is not None:
+                updates.append("proxy_url = ?")
+                params.append(proxy_url)
 
             if remark is not None:
                 updates.append("remark = ?")
@@ -1118,31 +1142,58 @@ class Database:
             return None
     
     # Request log operations
-    async def log_request(self, log: RequestLog):
-        """Log a request"""
+    async def log_request(self, log: RequestLog) -> int:
+        """Log a request and return log ID"""
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
-                INSERT INTO request_logs (token_id, operation, request_body, response_body, status_code, duration)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (log.token_id, log.operation, log.request_body, log.response_body, 
+            cursor = await db.execute("""
+                INSERT INTO request_logs (token_id, task_id, operation, request_body, response_body, status_code, duration)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (log.token_id, log.task_id, log.operation, log.request_body, log.response_body,
                   log.status_code, log.duration))
             await db.commit()
-    
+            return cursor.lastrowid
+
+    async def update_request_log(self, log_id: int, response_body: Optional[str] = None,
+                                 status_code: Optional[int] = None, duration: Optional[float] = None):
+        """Update request log with completion data"""
+        async with aiosqlite.connect(self.db_path) as db:
+            updates = []
+            params = []
+
+            if response_body is not None:
+                updates.append("response_body = ?")
+                params.append(response_body)
+            if status_code is not None:
+                updates.append("status_code = ?")
+                params.append(status_code)
+            if duration is not None:
+                updates.append("duration = ?")
+                params.append(duration)
+
+            if updates:
+                updates.append("updated_at = CURRENT_TIMESTAMP")
+                params.append(log_id)
+                query = f"UPDATE request_logs SET {', '.join(updates)} WHERE id = ?"
+                await db.execute(query, params)
+                await db.commit()
+
     async def get_recent_logs(self, limit: int = 100) -> List[dict]:
-        """Get recent logs with token email"""
+        """Get recent logs with token email and task progress"""
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("""
                 SELECT
                     rl.id,
                     rl.token_id,
+                    rl.task_id,
                     rl.operation,
                     rl.request_body,
                     rl.response_body,
                     rl.status_code,
                     rl.duration,
                     rl.created_at,
-                    t.email as token_email
+                    t.email as token_email,
+                    t.username as token_username
                 FROM request_logs rl
                 LEFT JOIN tokens t ON rl.token_id = t.id
                 ORDER BY rl.created_at DESC

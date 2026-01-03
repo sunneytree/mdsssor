@@ -49,3 +49,6 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Reference projects
+sora2api-main/

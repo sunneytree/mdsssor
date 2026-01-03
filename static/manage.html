@@ -45,9 +45,9 @@
             <nav class="flex space-x-8">
                 <button onclick="switchTab('tokens')" id="tabTokens" class="tab-btn border-b-2 border-primary text-sm font-medium py-3 px-1">Token 管理</button>
                 <button onclick="switchTab('settings')" id="tabSettings" class="tab-btn border-b-2 border-transparent text-sm font-medium py-3 px-1">系统配置</button>
-                <button onclick="switchTab('webdav')" id="tabWebdav" class="tab-btn border-b-2 border-transparent text-sm font-medium py-3 px-1">WebDAV 管理</button>
+                
                 <button onclick="switchTab('logs')" id="tabLogs" class="tab-btn border-b-2 border-transparent text-sm font-medium py-3 px-1">请求日志</button>
-                <button onclick="switchTab('test')" id="tabTest" class="tab-btn border-b-2 border-transparent text-sm font-medium py-3 px-1">在线测试</button>
+                <button onclick="switchTab('test')" id="tabTest" class="tab-btn border-b-2 border-transparent text-sm font-medium py-3 px-1">生成面板</button>
             </nav>
         </div>
 
@@ -443,15 +443,10 @@
                         <div id="cloudflareSolverOptions" style="display: none;" class="space-y-4 pt-4 border-t border-border">
                             <div>
                                 <label class="text-sm font-medium mb-2 block">Solver API 地址</label>
-                                <input id="cfgCloudflareSolverUrl" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="http://localhost:8000/v1/challenge">
+                                <input id="cfgCloudflareSolverUrl" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="http://64.23.171.147:8005/">
                                 <p class="text-xs text-muted-foreground mt-1">Cloudflare Solver 服务的 API 地址</p>
                             </div>
-                            <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
-                                <p class="text-xs text-blue-800 dark:text-blue-200">
-                                    <strong>部署 Solver 服务：</strong><br>
-                                    <code class="bg-background px-1 py-0.5 rounded text-xs">docker run -d --name sora-solver -p 8000:8000 --cap-add=SYS_ADMIN --security-opt seccomp=unconfined --shm-size=2g ghcr.io/genz27/sorasolver:latest</code>
-                                </p>
-                            </div>
+                            
                         </div>
 
                         <button onclick="saveCloudflareSolverConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full">保存配置</button>
@@ -460,7 +455,7 @@
 
                 <!-- Cloudflare 凭据状态 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">Cloudflare 凭据状态</h3>
+                    <!-- Cloudflare 凭据状态已移除 -->
                     <div class="space-y-4">
                         <!-- 状态显示 -->
                         <div id="cfStateDisplay" class="rounded-md p-4 border">
@@ -513,173 +508,6 @@
                             </p>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- WebDAV 管理面板 -->
-        <div id="panelWebdav" class="hidden">
-            <div class="grid gap-6 lg:grid-cols-2">
-                <!-- WebDAV 配置 -->
-                <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">WebDAV 配置</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="inline-flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="cfgWebdavEnabled" class="h-4 w-4 rounded border-input" onchange="toggleWebdavOptions()">
-                                <span class="text-sm font-medium">启用 WebDAV</span>
-                            </label>
-                            <p class="text-xs text-muted-foreground mt-1">启用后，去水印视频将自动上传到 WebDAV 服务器</p>
-                        </div>
-                        <div id="webdavOptions" style="display: none;" class="space-y-4 pt-4 border-t border-border">
-                            <div>
-                                <label class="text-sm font-medium mb-2 block">WebDAV 地址</label>
-                                <input id="cfgWebdavUrl" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="https://example.com/dav">
-                            </div>
-                            <div>
-                                <label class="text-sm font-medium mb-2 block">用户名</label>
-                                <input id="cfgWebdavUsername" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="admin">
-                            </div>
-                            <div>
-                                <label class="text-sm font-medium mb-2 block">密码</label>
-                                <input id="cfgWebdavPassword" type="password" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="password">
-                            </div>
-                            <div>
-                                <label class="text-sm font-medium mb-2 block">上传路径</label>
-                                <input id="cfgWebdavUploadPath" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="/video">
-                                <p class="text-xs text-muted-foreground mt-1">视频上传的目标目录</p>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <button onclick="testWebdavConnection()" class="inline-flex items-center justify-center rounded-md bg-blue-600 text-white hover:bg-blue-700 h-9 px-4">
-                                    <span id="testWebdavBtnText">测试连接</span>
-                                    <svg id="testWebdavBtnSpinner" class="hidden animate-spin h-4 w-4 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                </button>
-                                <span id="webdavTestResult" class="text-sm"></span>
-                            </div>
-                        </div>
-                        <button onclick="saveWebdavConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full">保存配置</button>
-                    </div>
-                </div>
-
-                <!-- 自动删除配置 -->
-                <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">自动删除配置</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="inline-flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="cfgAutoDeleteEnabled" class="h-4 w-4 rounded border-input">
-                                <span class="text-sm font-medium">启用定时删除</span>
-                            </label>
-                            <p class="text-xs text-muted-foreground mt-1">自动删除超过指定天数的视频</p>
-                        </div>
-                        <div>
-                            <label class="text-sm font-medium mb-2 block">保留天数</label>
-                            <input id="cfgAutoDeleteDays" type="number" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="30" min="1" max="365">
-                            <p class="text-xs text-muted-foreground mt-1">视频上传后保留的天数</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="saveAutoDeleteConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 flex-1">保存配置</button>
-                            <button onclick="triggerAutoDelete()" class="inline-flex items-center justify-center rounded-md bg-orange-600 text-white hover:bg-orange-700 h-9 px-4">立即执行</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 视频统计 -->
-                <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">视频统计</h3>
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="text-center">
-                            <p class="text-2xl font-bold text-blue-600" id="webdavStatTotal">0</p>
-                            <p class="text-xs text-muted-foreground">总数</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-2xl font-bold text-green-600" id="webdavStatUploaded">0</p>
-                            <p class="text-xs text-muted-foreground">已上传</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-2xl font-bold text-red-600" id="webdavStatFailed">0</p>
-                            <p class="text-xs text-muted-foreground">失败</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 pt-4 border-t border-border">
-                        <p class="text-sm text-muted-foreground">总大小: <span id="webdavStatSize" class="font-medium">0 MB</span></p>
-                    </div>
-                </div>
-
-                <!-- 快捷操作 -->
-                <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">快捷操作</h3>
-                    <div class="space-y-3">
-                        <button onclick="deleteAllWebdavVideos()" class="inline-flex items-center justify-center rounded-md bg-red-600 text-white hover:bg-red-700 h-9 px-4 w-full">
-                            一键删除所有视频
-                        </button>
-                        <button onclick="clearVideoRecords()" class="inline-flex items-center justify-center rounded-md bg-yellow-600 text-white hover:bg-yellow-700 h-9 px-4 w-full">
-                            清空视频记录
-                        </button>
-                        <button onclick="clearUploadLogs()" class="inline-flex items-center justify-center rounded-md bg-gray-600 text-white hover:bg-gray-700 h-9 px-4 w-full">
-                            清空上传日志
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 视频记录列表 -->
-            <div class="rounded-lg border border-border bg-background mt-6">
-                <div class="flex items-center justify-between gap-4 p-4 border-b border-border">
-                    <h3 class="text-lg font-semibold">视频记录</h3>
-                    <button onclick="refreshWebdavVideos()" class="inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent h-8 w-8" title="刷新">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="relative w-full overflow-auto max-h-[400px]">
-                    <table class="w-full text-sm">
-                        <thead class="sticky top-0 bg-background">
-                            <tr class="border-b border-border">
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">任务ID</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">状态</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">大小</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">WebDAV路径</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">上传时间</th>
-                                <th class="h-10 px-3 text-right align-middle font-medium text-muted-foreground">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="webdavVideosTableBody" class="divide-y divide-border">
-                            <!-- 动态填充 -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 上传日志列表 -->
-            <div class="rounded-lg border border-border bg-background mt-6">
-                <div class="flex items-center justify-between gap-4 p-4 border-b border-border">
-                    <h3 class="text-lg font-semibold">上传日志</h3>
-                    <button onclick="refreshUploadLogs()" class="inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent h-8 w-8" title="刷新">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="relative w-full overflow-auto max-h-[300px]">
-                    <table class="w-full text-sm">
-                        <thead class="sticky top-0 bg-background">
-                            <tr class="border-b border-border">
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">操作</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">状态</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">消息</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">耗时</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">时间</th>
-                            </tr>
-                        </thead>
-                        <tbody id="uploadLogsTableBody" class="divide-y divide-border">
-                            <!-- 动态填充 -->
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
@@ -913,6 +741,13 @@
                     <p class="text-xs text-muted-foreground">用于 RT 刷新，留空使用默认 Client ID</p>
                 </div>
 
+                <!-- Proxy URL -->
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">代理 <span class="text-muted-foreground text-xs">- 可选</span></label>
+                    <input id="addTokenProxyUrl" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080">
+                    <p class="text-xs text-muted-foreground">支持 http 和 socks5 代理，留空使用系统设置的代理</p>
+                </div>
+
                 <!-- Remark -->
                 <div class="space-y-2">
                     <label class="text-sm font-medium">备注 <span class="text-muted-foreground text-xs">- 可选</span></label>
@@ -1007,6 +842,13 @@
                     <label class="text-sm font-medium">Client ID <span class="text-muted-foreground text-xs">- 可选</span></label>
                     <input id="editTokenClientId" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="留空使用默认值">
                     <p class="text-xs text-muted-foreground">用于 RT 刷新，留空使用默认 Client ID</p>
+                </div>
+
+                <!-- Proxy URL -->
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">代理 <span class="text-muted-foreground text-xs">- 可选</span></label>
+                    <input id="editTokenProxyUrl" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080">
+                    <p class="text-xs text-muted-foreground">支持 http 和 socks5 代理，留空使用系统设置的代理</p>
                 </div>
 
                 <!-- Remark -->
@@ -1213,15 +1055,15 @@
         renderTokens=()=>{const tb=$('tokenTableBody');const start=(currentPage-1)*pageSize;const end=start+pageSize;const pageTokens=filteredTokens.slice(start,end);tb.innerHTML=pageTokens.map(t=>{const imageDisplay=t.image_enabled?`${t.image_count||0}`:'-';const videoDisplay=(t.video_enabled&&t.sora2_supported)?`${t.video_count||0}`:'-';return`<tr><td class="py-2.5 px-3">${t.email}</td><td class="py-2.5 px-3"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs ${t.is_active?'bg-green-50 text-green-700':'bg-gray-100 text-gray-700'}">${t.is_active?'活跃':'禁用'}</span></td><td class="py-2.5 px-3">${formatClientId(t.client_id)}</td><td class="py-2.5 px-3 text-xs">${formatExpiry(t.expiry_time)}</td><td class="py-2.5 px-3 text-xs">${formatPlanTypeWithTooltip(t)}</td><td class="py-2.5 px-3 text-xs">${formatSora2(t)}</td><td class="py-2.5 px-3">${formatSora2Remaining(t)}</td><td class="py-2.5 px-3">${imageDisplay}</td><td class="py-2.5 px-3">${videoDisplay}</td><td class="py-2.5 px-3">${t.error_count||0}</td><td class="py-2.5 px-3 text-xs text-muted-foreground">${t.remark||'-'}</td><td class="py-2.5 px-3 text-right"><button onclick="testToken(${t.id})" class="inline-flex items-center justify-center rounded-md hover:bg-blue-50 hover:text-blue-700 h-7 px-2 text-xs mr-1">测试</button><button onclick="activateUsername(${t.id})" class="inline-flex items-center justify-center rounded-md hover:bg-purple-50 hover:text-purple-700 h-7 px-2 text-xs mr-1" title="为该Token激活用户名">激活用户名</button><button onclick="openEditModal(${t.id})" class="inline-flex items-center justify-center rounded-md hover:bg-green-50 hover:text-green-700 h-7 px-2 text-xs mr-1">编辑</button><button onclick="toggleToken(${t.id},${t.is_active})" class="inline-flex items-center justify-center rounded-md hover:bg-accent h-7 px-2 text-xs mr-1">${t.is_active?'禁用':'启用'}</button><button onclick="deleteToken(${t.id})" class="inline-flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive h-7 px-2 text-xs">删除</button></td></tr>`}).join('');updatePagination()},
         refreshTokens=async()=>{await loadTokens();await loadStats()},
         openAddModal=()=>$('addModal').classList.remove('hidden'),
-        closeAddModal=()=>{$('addModal').classList.add('hidden');$('addTokenAT').value='';$('addTokenST').value='';$('addTokenRT').value='';$('addTokenClientId').value='';$('addTokenRemark').value='';$('addTokenImageEnabled').checked=true;$('addTokenVideoEnabled').checked=true;$('addTokenImageConcurrency').value='-1';$('addTokenVideoConcurrency').value='-1';$('addRTRefreshHint').classList.add('hidden')},
-        openEditModal=(id)=>{const token=allTokens.find(t=>t.id===id);if(!token)return showToast('Token不存在','error');$('editTokenId').value=token.id;$('editTokenAT').value=token.token||'';$('editTokenST').value=token.st||'';$('editTokenRT').value=token.rt||'';$('editTokenClientId').value=token.client_id||'';$('editTokenRemark').value=token.remark||'';$('editTokenImageEnabled').checked=token.image_enabled!==false;$('editTokenVideoEnabled').checked=token.video_enabled!==false;$('editTokenImageConcurrency').value=token.image_concurrency||'-1';$('editTokenVideoConcurrency').value=token.video_concurrency||'-1';$('editModal').classList.remove('hidden')},
-        closeEditModal=()=>{$('editModal').classList.add('hidden');$('editTokenId').value='';$('editTokenAT').value='';$('editTokenST').value='';$('editTokenRT').value='';$('editTokenClientId').value='';$('editTokenRemark').value='';$('editTokenImageEnabled').checked=true;$('editTokenVideoEnabled').checked=true;$('editTokenImageConcurrency').value='';$('editTokenVideoConcurrency').value='';$('editRTRefreshHint').classList.add('hidden')},
-        submitEditToken=async()=>{const id=parseInt($('editTokenId').value),at=$('editTokenAT').value.trim(),st=$('editTokenST').value.trim(),rt=$('editTokenRT').value.trim(),clientId=$('editTokenClientId').value.trim(),remark=$('editTokenRemark').value.trim(),imageEnabled=$('editTokenImageEnabled').checked,videoEnabled=$('editTokenVideoEnabled').checked,imageConcurrency=$('editTokenImageConcurrency').value?parseInt($('editTokenImageConcurrency').value):null,videoConcurrency=$('editTokenVideoConcurrency').value?parseInt($('editTokenVideoConcurrency').value):null;if(!id)return showToast('Token ID无效','error');if(!at)return showToast('请输入 Access Token','error');const btn=$('editTokenBtn'),btnText=$('editTokenBtnText'),btnSpinner=$('editTokenBtnSpinner');btn.disabled=true;btnText.textContent='保存中...';btnSpinner.classList.remove('hidden');try{const r=await apiRequest(`/api/tokens/${id}`,{method:'PUT',body:JSON.stringify({token:at,st:st||null,rt:rt||null,client_id:clientId||null,remark:remark||null,image_enabled:imageEnabled,video_enabled:videoEnabled,image_concurrency:imageConcurrency,video_concurrency:videoConcurrency})});if(!r){btn.disabled=false;btnText.textContent='保存';btnSpinner.classList.add('hidden');return}const d=await r.json();if(d.success){closeEditModal();await refreshTokens();showToast('Token更新成功','success')}else{showToast('更新失败: '+(d.detail||d.message||'未知错误'),'error')}}catch(e){showToast('更新失败: '+e.message,'error')}finally{btn.disabled=false;btnText.textContent='保存';btnSpinner.classList.add('hidden')}},
+        closeAddModal=()=>{$('addModal').classList.add('hidden');$('addTokenAT').value='';$('addTokenST').value='';$('addTokenRT').value='';$('addTokenClientId').value='';$('addTokenProxyUrl').value='';$('addTokenRemark').value='';$('addTokenImageEnabled').checked=true;$('addTokenVideoEnabled').checked=true;$('addTokenImageConcurrency').value='-1';$('addTokenVideoConcurrency').value='-1';$('addRTRefreshHint').classList.add('hidden')},
+        openEditModal=(id)=>{const token=allTokens.find(t=>t.id===id);if(!token)return showToast('Token不存在','error');$('editTokenId').value=token.id;$('editTokenAT').value=token.token||'';$('editTokenST').value=token.st||'';$('editTokenRT').value=token.rt||'';$('editTokenClientId').value=token.client_id||'';$('editTokenProxyUrl').value=token.proxy_url||'';$('editTokenRemark').value=token.remark||'';$('editTokenImageEnabled').checked=token.image_enabled!==false;$('editTokenVideoEnabled').checked=token.video_enabled!==false;$('editTokenImageConcurrency').value=token.image_concurrency||'-1';$('editTokenVideoConcurrency').value=token.video_concurrency||'-1';$('editModal').classList.remove('hidden')},
+        closeEditModal=()=>{$('editModal').classList.add('hidden');$('editTokenId').value='';$('editTokenAT').value='';$('editTokenST').value='';$('editTokenRT').value='';$('editTokenClientId').value='';$('editTokenProxyUrl').value='';$('editTokenRemark').value='';$('editTokenImageEnabled').checked=true;$('editTokenVideoEnabled').checked=true;$('editTokenImageConcurrency').value='';$('editTokenVideoConcurrency').value='';$('editRTRefreshHint').classList.add('hidden')},
+        submitEditToken=async()=>{const id=parseInt($('editTokenId').value),at=$('editTokenAT').value.trim(),st=$('editTokenST').value.trim(),rt=$('editTokenRT').value.trim(),clientId=$('editTokenClientId').value.trim(),proxyUrl=$('editTokenProxyUrl').value.trim(),remark=$('editTokenRemark').value.trim(),imageEnabled=$('editTokenImageEnabled').checked,videoEnabled=$('editTokenVideoEnabled').checked,imageConcurrency=$('editTokenImageConcurrency').value?parseInt($('editTokenImageConcurrency').value):null,videoConcurrency=$('editTokenVideoConcurrency').value?parseInt($('editTokenVideoConcurrency').value):null;if(!id)return showToast('Token ID无效','error');if(!at)return showToast('请输入 Access Token','error');const btn=$('editTokenBtn'),btnText=$('editTokenBtnText'),btnSpinner=$('editTokenBtnSpinner');btn.disabled=true;btnText.textContent='保存中...';btnSpinner.classList.remove('hidden');try{const r=await apiRequest(`/api/tokens/${id}`,{method:'PUT',body:JSON.stringify({token:at,st:st||null,rt:rt||null,client_id:clientId||null,proxy_url:proxyUrl||null,remark:remark||null,image_enabled:imageEnabled,video_enabled:videoEnabled,image_concurrency:imageConcurrency,video_concurrency:videoConcurrency})});if(!r){btn.disabled=false;btnText.textContent='保存';btnSpinner.classList.add('hidden');return}const d=await r.json();if(d.success){closeEditModal();await refreshTokens();showToast('Token更新成功','success')}else{showToast('更新失败: '+(d.detail||d.message||'未知错误'),'error')}}catch(e){showToast('更新失败: '+e.message,'error')}finally{btn.disabled=false;btnText.textContent='保存';btnSpinner.classList.add('hidden')}},
         convertST2AT=async()=>{const st=$('addTokenST').value.trim();if(!st)return showToast('请先输入 Session Token','error');try{showToast('正在转换 ST→AT...','info');const r=await apiRequest('/api/tokens/st2at',{method:'POST',body:JSON.stringify({st:st})});if(!r)return;const d=await r.json();if(d.success&&d.access_token){$('addTokenAT').value=d.access_token;showToast('转换成功！AT已自动填入','success')}else{showToast('转换失败: '+(d.message||d.detail||'未知错误'),'error')}}catch(e){showToast('转换失败: '+e.message,'error')}},
         convertRT2AT=async()=>{const rt=$('addTokenRT').value.trim();if(!rt)return showToast('请先输入 Refresh Token','error');const hint=$('addRTRefreshHint');hint.classList.add('hidden');try{showToast('正在转换 RT→AT...','info');const r=await apiRequest('/api/tokens/rt2at',{method:'POST',body:JSON.stringify({rt:rt})});if(!r)return;const d=await r.json();if(d.success&&d.access_token){$('addTokenAT').value=d.access_token;if(d.refresh_token){$('addTokenRT').value=d.refresh_token;hint.classList.remove('hidden');showToast('转换成功！AT已自动填入，RT已被刷新并更新','success')}else{showToast('转换成功！AT已自动填入','success')}}else{showToast('转换失败: '+(d.message||d.detail||'未知错误'),'error')}}catch(e){showToast('转换失败: '+e.message,'error')}},
         convertEditST2AT=async()=>{const st=$('editTokenST').value.trim();if(!st)return showToast('请先输入 Session Token','error');try{showToast('正在转换 ST→AT...','info');const r=await apiRequest('/api/tokens/st2at',{method:'POST',body:JSON.stringify({st:st})});if(!r)return;const d=await r.json();if(d.success&&d.access_token){$('editTokenAT').value=d.access_token;showToast('转换成功！AT已自动填入','success')}else{showToast('转换失败: '+(d.message||d.detail||'未知错误'),'error')}}catch(e){showToast('转换失败: '+e.message,'error')}},
         convertEditRT2AT=async()=>{const rt=$('editTokenRT').value.trim();if(!rt)return showToast('请先输入 Refresh Token','error');const hint=$('editRTRefreshHint');hint.classList.add('hidden');try{showToast('正在转换 RT→AT...','info');const r=await apiRequest('/api/tokens/rt2at',{method:'POST',body:JSON.stringify({rt:rt})});if(!r)return;const d=await r.json();if(d.success&&d.access_token){$('editTokenAT').value=d.access_token;if(d.refresh_token){$('editTokenRT').value=d.refresh_token;hint.classList.remove('hidden');showToast('转换成功！AT已自动填入，RT已被刷新并更新','success')}else{showToast('转换成功！AT已自动填入','success')}}else{showToast('转换失败: '+(d.message||d.detail||'未知错误'),'error')}}catch(e){showToast('转换失败: '+e.message,'error')}},
-        submitAddToken=async()=>{const at=$('addTokenAT').value.trim(),st=$('addTokenST').value.trim(),rt=$('addTokenRT').value.trim(),clientId=$('addTokenClientId').value.trim(),remark=$('addTokenRemark').value.trim(),imageEnabled=$('addTokenImageEnabled').checked,videoEnabled=$('addTokenVideoEnabled').checked,imageConcurrency=parseInt($('addTokenImageConcurrency').value)||(-1),videoConcurrency=parseInt($('addTokenVideoConcurrency').value)||(-1);if(!at)return showToast('请输入 Access Token 或使用 ST/RT 转换','error');const btn=$('addTokenBtn'),btnText=$('addTokenBtnText'),btnSpinner=$('addTokenBtnSpinner');btn.disabled=true;btnText.textContent='添加中...';btnSpinner.classList.remove('hidden');try{const r=await apiRequest('/api/tokens',{method:'POST',body:JSON.stringify({token:at,st:st||null,rt:rt||null,client_id:clientId||null,remark:remark||null,image_enabled:imageEnabled,video_enabled:videoEnabled,image_concurrency:imageConcurrency,video_concurrency:videoConcurrency})});if(!r){btn.disabled=false;btnText.textContent='添加';btnSpinner.classList.add('hidden');return}if(r.status===409){const d=await r.json();const msg=d.detail||'Token 已存在';btn.disabled=false;btnText.textContent='添加';btnSpinner.classList.add('hidden');if(confirm(msg+'\n\n是否删除旧 Token 后重新添加？')){const existingToken=allTokens.find(t=>t.token===at);if(existingToken){const deleted=await deleteToken(existingToken.id,true);if(deleted){showToast('正在重新添加...','info');setTimeout(()=>submitAddToken(),500)}else{showToast('删除旧 Token 失败','error')}}}return}const d=await r.json();if(d.success){closeAddModal();await refreshTokens();showToast('Token添加成功','success')}else{showToast('添加失败: '+(d.detail||d.message||'未知错误'),'error')}}catch(e){showToast('添加失败: '+e.message,'error')}finally{btn.disabled=false;btnText.textContent='添加';btnSpinner.classList.add('hidden')}},
+        submitAddToken=async()=>{const at=$('addTokenAT').value.trim(),st=$('addTokenST').value.trim(),rt=$('addTokenRT').value.trim(),clientId=$('addTokenClientId').value.trim(),proxyUrl=$('addTokenProxyUrl').value.trim(),remark=$('addTokenRemark').value.trim(),imageEnabled=$('addTokenImageEnabled').checked,videoEnabled=$('addTokenVideoEnabled').checked,imageConcurrency=parseInt($('addTokenImageConcurrency').value)||(-1),videoConcurrency=parseInt($('addTokenVideoConcurrency').value)||(-1);if(!at)return showToast('请输入 Access Token 或使用 ST/RT 转换','error');const btn=$('addTokenBtn'),btnText=$('addTokenBtnText'),btnSpinner=$('addTokenBtnSpinner');btn.disabled=true;btnText.textContent='添加中...';btnSpinner.classList.remove('hidden');try{const r=await apiRequest('/api/tokens',{method:'POST',body:JSON.stringify({token:at,st:st||null,rt:rt||null,client_id:clientId||null,proxy_url:proxyUrl||null,remark:remark||null,image_enabled:imageEnabled,video_enabled:videoEnabled,image_concurrency:imageConcurrency,video_concurrency:videoConcurrency})});if(!r){btn.disabled=false;btnText.textContent='添加';btnSpinner.classList.add('hidden');return}if(r.status===409){const d=await r.json();const msg=d.detail||'Token 已存在';btn.disabled=false;btnText.textContent='添加';btnSpinner.classList.add('hidden');if(confirm(msg+'\n\n是否删除旧 Token 后重新添加？')){const existingToken=allTokens.find(t=>t.token===at);if(existingToken){const deleted=await deleteToken(existingToken.id,true);if(deleted){showToast('正在重新添加...','info');setTimeout(()=>submitAddToken(),500)}else{showToast('删除旧 Token 失败','error')}}}return}const d=await r.json();if(d.success){closeAddModal();await refreshTokens();showToast('Token添加成功','success')}else{showToast('添加失败: '+(d.detail||d.message||'未知错误'),'error')}}catch(e){showToast('添加失败: '+e.message,'error')}finally{btn.disabled=false;btnText.textContent='添加';btnSpinner.classList.add('hidden')}},
         testToken=async(id)=>{try{showToast('正在测试Token...','info');const r=await apiRequest(`/api/tokens/${id}/test`,{method:'POST'});if(!r)return;const d=await r.json();if(d.success&&d.status==='success'){let msg=`Token有效！用户: ${d.email||'未知'}`;if(d.sora2_supported){const remaining=d.sora2_total_count-d.sora2_redeemed_count;msg+=`\nSora2: 支持 (${remaining}/${d.sora2_total_count})`;if(d.sora2_remaining_count!==undefined){msg+=`\n可用次数: ${d.sora2_remaining_count}`}}showToast(msg,'success');await refreshTokens()}else{showToast(`Token无效: ${d.message||'未知错误'}`,'error')}}catch(e){showToast('测试失败: '+e.message,'error')}},
         activateUsername=async(id)=>{try{showToast('正在激活用户名...','info');const r=await apiRequest(`/api/tokens/${id}/activate-username`,{method:'POST'});if(!r)return;const d=await r.json();if(d.success){if(d.already_set){showToast(`用户名已存在: ${d.username}`,'info')}else{showToast(`用户名激活成功: ${d.username}`,'success')}}else{showToast(`激活失败: ${d.detail||d.message||'未知错误'}`,'error')}}catch(e){showToast('激活失败: '+e.message,'error')}},
         batchActivateUnsupported=async()=>{const unsupportedTokens=allTokens.filter(t=>t.sora2_supported===false&&t.is_active);if(unsupportedTokens.length===0){showToast('没有需要激活的Token','info');return}if(!confirm(`将激活 ${unsupportedTokens.length} 个不支持Sora2的Token，是否继续？`))return;showToast(`开始批量激活 ${unsupportedTokens.length} 个Token...`,'info');let success=0,failed=0,stopped=false;for(const token of unsupportedTokens){if(stopped)break;let retryCount=0;while(true){try{const r=await apiRequest(`/api/tokens/${token.id}/activate-username`,{method:'POST'});if(!r){retryCount++;if(retryCount>100){failed++;break}await new Promise(r=>setTimeout(r,2000));continue}const d=await r.json();if(d.success){success++;showToast(`[${success+failed}/${unsupportedTokens.length}] ${token.email} 激活成功`,'success');break}else{const errMsg=(d.detail||d.message||'').toLowerCase();if(errMsg.includes('401')||errMsg.includes('unauthorized')||errMsg.includes('invalid')){failed++;showToast(`[${success+failed}/${unsupportedTokens.length}] ${token.email} 401错误，跳过`,'error');break}else if(errMsg.includes('429')||errMsg.includes('rate')){retryCount++;showToast(`[${success+failed}/${unsupportedTokens.length}] ${token.email} 429限流，${retryCount}次重试中...`,'info');await new Promise(r=>setTimeout(r,3000));continue}else{failed++;showToast(`[${success+failed}/${unsupportedTokens.length}] ${token.email} 失败: ${d.detail||d.message}`,'error');break}}}catch(e){const errMsg=e.message.toLowerCase();if(errMsg.includes('429')||errMsg.includes('rate')){retryCount++;await new Promise(r=>setTimeout(r,3000));continue}failed++;break}}}await refreshTokens();showToast(`批量激活完成！成功: ${success}, 失败: ${failed}`,'success')},
@@ -1238,7 +1080,7 @@
         updateBatchPlaceholder=()=>{const type=document.querySelector('input[name="batchTokenType"]:checked').value;$('batchTokenList').placeholder=type==='rt'?'每行输入一个 Refresh Token...':'每行输入一个 Session Token...'},
         addBatchLog=(msg,type='info')=>{const log=$('batchLog');const color=type==='success'?'text-green-600':type==='error'?'text-red-600':'text-gray-600';log.innerHTML+=`<div class="${color}">${msg}</div>`;log.scrollTop=log.scrollHeight},
         submitBatchAdd=async()=>{const tokenType=document.querySelector('input[name="batchTokenType"]:checked').value;const tokenList=$('batchTokenList').value.trim().split('\n').map(t=>t.trim()).filter(t=>t.length>0);const imageEnabled=$('batchImageEnabled').checked;const videoEnabled=$('batchVideoEnabled').checked;if(tokenList.length===0)return showToast('请输入至少一个Token','error');const btn=$('batchAddBtn'),btnText=$('batchAddBtnText'),btnSpinner=$('batchAddBtnSpinner');btn.disabled=true;btnText.textContent='处理中...';btnSpinner.classList.remove('hidden');$('batchProgress').classList.remove('hidden');$('batchLog').innerHTML='';let success=0,failed=0,skipped=0;const total=tokenList.length;for(let i=0;i<tokenList.length;i++){const token=tokenList[i];$('batchProgressText').textContent=`${i+1}/${total}`;$('batchProgressBar').style.width=`${((i+1)/total)*100}%`;addBatchLog(`[${i+1}/${total}] 正在处理...`);try{const convertUrl=tokenType==='rt'?'/api/tokens/rt2at':'/api/tokens/st2at';const convertBody=tokenType==='rt'?{rt:token}:{st:token};const convertR=await apiRequest(convertUrl,{method:'POST',body:JSON.stringify(convertBody)});if(!convertR){addBatchLog(`[${i+1}/${total}] 转换失败: 请求错误`,'error');failed++;continue}const convertD=await convertR.json();if(!convertD.success||!convertD.access_token){addBatchLog(`[${i+1}/${total}] 转换失败: ${convertD.message||convertD.detail||'未知错误'}`,'error');failed++;continue}const at=convertD.access_token;const newRt=convertD.refresh_token||null;const addR=await apiRequest('/api/tokens',{method:'POST',body:JSON.stringify({token:at,st:tokenType==='st'?token:null,rt:tokenType==='rt'?(newRt||token):null,image_enabled:imageEnabled,video_enabled:videoEnabled,image_concurrency:-1,video_concurrency:-1})});if(!addR){addBatchLog(`[${i+1}/${total}] 添加失败: 请求错误`,'error');failed++;continue}if(addR.status===409){addBatchLog(`[${i+1}/${total}] 跳过: Token已存在`,'info');skipped++;continue}const addD=await addR.json();if(addD.success){addBatchLog(`[${i+1}/${total}] 成功: ${addD.email||'已添加'}`,'success');success++}else{addBatchLog(`[${i+1}/${total}] 添加失败: ${addD.detail||addD.message||'未知错误'}`,'error');failed++}}catch(e){addBatchLog(`[${i+1}/${total}] 错误: ${e.message}`,'error');failed++}}btn.disabled=false;btnText.textContent='开始添加';btnSpinner.classList.add('hidden');await refreshTokens();showToast(`批量添加完成！成功: ${success}, 失败: ${failed}, 跳过: ${skipped}`,'success')},
-        exportTokens=()=>{if(allTokens.length===0){showToast('没有Token可导出','error');return}const exportData=allTokens.map(t=>({email:t.email,access_token:t.token,session_token:t.st||null,refresh_token:t.rt||null,is_active:t.is_active,image_enabled:t.image_enabled!==false,video_enabled:t.video_enabled!==false,image_concurrency:t.image_concurrency||(-1),video_concurrency:t.video_concurrency||(-1)}));const dataStr=JSON.stringify(exportData,null,2);const dataBlob=new Blob([dataStr],{type:'application/json'});const url=URL.createObjectURL(dataBlob);const link=document.createElement('a');link.href=url;link.download=`tokens_${new Date().toISOString().split('T')[0]}.json`;document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);showToast(`已导出 ${allTokens.length} 个Token`,'success')},
+        exportTokens=()=>{if(allTokens.length===0){showToast('没有Token可导出','error');return}const exportData=allTokens.map(t=>({email:t.email,access_token:t.token,session_token:t.st||null,refresh_token:t.rt||null,proxy_url:t.proxy_url||null,remark:t.remark||null,is_active:t.is_active,image_enabled:t.image_enabled!==false,video_enabled:t.video_enabled!==false,image_concurrency:t.image_concurrency||(-1),video_concurrency:t.video_concurrency||(-1)}));const dataStr=JSON.stringify(exportData,null,2);const dataBlob=new Blob([dataStr],{type:'application/json'});const url=URL.createObjectURL(dataBlob);const link=document.createElement('a');link.href=url;link.download=`tokens_${new Date().toISOString().split('T')[0]}.json`;document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);showToast(`已导出 ${allTokens.length} 个Token`,'success')},
         submitImportTokens=async()=>{const fileInput=$('importFile');if(!fileInput.files||fileInput.files.length===0){showToast('请选择文件','error');return}const file=fileInput.files[0];if(!file.name.endsWith('.json')){showToast('请选择JSON文件','error');return}try{const fileContent=await file.text();const importData=JSON.parse(fileContent);if(!Array.isArray(importData)){showToast('JSON格式错误：应为数组','error');return}if(importData.length===0){showToast('JSON文件为空','error');return}const btn=$('importBtn'),btnText=$('importBtnText'),btnSpinner=$('importBtnSpinner');btn.disabled=true;btnText.textContent='导入中...';btnSpinner.classList.remove('hidden');try{const r=await apiRequest('/api/tokens/import',{method:'POST',body:JSON.stringify({tokens:importData})});if(!r){btn.disabled=false;btnText.textContent='导入';btnSpinner.classList.add('hidden');return}const d=await r.json();if(d.success){closeImportModal();await refreshTokens();const msg=`导入成功！新增: ${d.added||0}, 更新: ${d.updated||0}`;showToast(msg,'success')}else{showToast('导入失败: '+(d.detail||d.message||'未知错误'),'error')}}catch(e){showToast('导入失败: '+e.message,'error')}finally{btn.disabled=false;btnText.textContent='导入';btnSpinner.classList.add('hidden')}}catch(e){showToast('文件解析失败: '+e.message,'error')}},
         submitSora2Activate=async()=>{const tokenId=parseInt($('sora2TokenId').value),inviteCode=$('sora2InviteCode').value.trim();if(!tokenId)return showToast('Token ID无效','error');if(!inviteCode)return showToast('请输入邀请码','error');if(inviteCode.length!==6)return showToast('邀请码必须是6位','error');const btn=$('sora2ActivateBtn'),btnText=$('sora2ActivateBtnText'),btnSpinner=$('sora2ActivateBtnSpinner');btn.disabled=true;btnText.textContent='激活中...';btnSpinner.classList.remove('hidden');try{showToast('正在激活Sora2...','info');const r=await apiRequest(`/api/tokens/${tokenId}/sora2/activate?invite_code=${inviteCode}`,{method:'POST'});if(!r){btn.disabled=false;btnText.textContent='激活';btnSpinner.classList.add('hidden');return}const d=await r.json();if(d.success){closeSora2Modal();await refreshTokens();if(d.already_accepted){showToast('Sora2已激活（之前已接受）','success')}else{showToast(`Sora2激活成功！邀请码: ${d.invite_code||'无'}`,'success')}}else{showToast('激活失败: '+(d.message||'未知错误'),'error')}}catch(e){showToast('激活失败: '+e.message,'error')}finally{btn.disabled=false;btnText.textContent='激活';btnSpinner.classList.add('hidden')}},
         loadAdminConfig=async()=>{try{const r=await apiRequest('/api/admin/config');if(!r)return;const d=await r.json();$('cfgErrorBan').value=d.error_ban_threshold||3;$('cfgAdminUsername').value=d.admin_username||'admin';$('cfgCurrentAPIKey').value=d.api_key||'';$('cfgDebugEnabled').checked=d.debug_enabled||false}catch(e){console.error('加载配置失败:',e)}},
@@ -1250,6 +1092,7 @@
         saveProxyConfig=async()=>{try{const r=await apiRequest('/api/proxy/config',{method:'POST',body:JSON.stringify({proxy_enabled:$('cfgProxyEnabled').checked,proxy_url:$('cfgProxyUrl').value.trim(),proxy_pool_enabled:$('cfgProxyPoolEnabled').checked})});if(!r)return;const d=await r.json();if(d.success){showToast('代理配置保存成功','success');await loadProxyConfig()}else{showToast('保存失败','error')}}catch(e){showToast('保存失败: '+e.message,'error')}},
         loadProxyPool=async()=>{try{const r=await apiRequest('/api/proxy/pool');if(!r)return;const d=await r.json();if(d.success){$('cfgProxyPool').value=d.content||''}}catch(e){console.error('加载代理池失败:',e);showToast('加载代理池失败: '+e.message,'error')}},
         saveProxyPool=async()=>{try{const content=$('cfgProxyPool').value;const r=await apiRequest('/api/proxy/pool',{method:'POST',body:JSON.stringify({content:content})});if(!r)return;const d=await r.json();if(d.success){showToast('代理池保存成功','success');await loadProxyConfig()}else{showToast('保存失败: '+(d.message||'未知错误'),'error')}}catch(e){showToast('保存失败: '+e.message,'error')}},
+        testAllProxies=async(removeInvalid=false)=>{showToast('正在检测代理，请稍候...','info');try{const r=await apiRequest('/api/proxy/test',{method:'POST',body:JSON.stringify({remove_invalid:removeInvalid})});if(!r)return;const d=await r.json();if(d.success){$('proxyTestResults').classList.remove('hidden');$('proxyTestTotal').textContent=d.total;$('proxyTestValid').textContent=d.valid;$('proxyTestInvalid').textContent=d.invalid;$('proxyTestRemoved').textContent=d.removed||0;const list=$('proxyTestList');list.innerHTML='';d.results.forEach(r=>{const div=document.createElement('div');div.className='flex items-center justify-between p-1 rounded '+(r.success?'bg-green-50':'bg-red-50');div.innerHTML='<span class="truncate flex-1">'+(r.proxy||'未知')+'</span><span class="ml-2 '+(r.success?'text-green-600':'text-red-600')+'">'+(r.success?'✓ '+r.latency+'ms':'✗ '+r.error)+'</span>';list.appendChild(div)});showToast(d.message,'success');if(removeInvalid&&d.removed>0){await loadProxyPool();await loadProxyConfig()}}else{showToast('检测失败: '+(d.message||'未知错误'),'error')}}catch(e){showToast('检测失败: '+e.message,'error')}},
         loadWatermarkFreeConfig=async()=>{try{const r=await apiRequest('/api/watermark-free/config');if(!r)return;const d=await r.json();$('cfgWatermarkFreeEnabled').checked=d.watermark_free_enabled||false;$('cfgParseMethod').value=d.parse_method||'third_party';$('cfgCustomParseUrl').value=d.custom_parse_url||'';$('cfgCustomParseToken').value=d.custom_parse_token||'';toggleWatermarkFreeOptions();toggleCustomParseOptions()}catch(e){console.error('加载无水印模式配置失败:',e)}},
         saveWatermarkFreeConfig=async()=>{try{const enabled=$('cfgWatermarkFreeEnabled').checked,parseMethod=$('cfgParseMethod').value,customUrl=$('cfgCustomParseUrl').value.trim(),customToken=$('cfgCustomParseToken').value.trim();if(enabled&&parseMethod==='custom'){if(!customUrl)return showToast('请输入解析服务器地址','error');if(!customToken)return showToast('请输入访问密钥','error')}const r=await apiRequest('/api/watermark-free/config',{method:'POST',body:JSON.stringify({watermark_free_enabled:enabled,parse_method:parseMethod,custom_parse_url:customUrl||null,custom_parse_token:customToken||null})});if(!r)return;const d=await r.json();d.success?showToast('无水印模式配置保存成功','success'):showToast('保存失败','error')}catch(e){showToast('保存失败: '+e.message,'error')}},
         toggleWatermarkFreeOptions=()=>{const enabled=$('cfgWatermarkFreeEnabled').checked;$('watermarkFreeOptions').style.display=enabled?'block':'none'},
@@ -1273,13 +1116,13 @@
         saveGenerationTimeout=async()=>{const imageTimeout=parseInt($('cfgImageTimeout').value)||300,videoTimeout=parseInt($('cfgVideoTimeout').value)||1500;console.log('保存生成超时配置:',{imageTimeout,videoTimeout});if(imageTimeout<60||imageTimeout>3600)return showToast('图片超时时间必须在 60-3600 秒之间','error');if(videoTimeout<60||videoTimeout>7200)return showToast('视频超时时间必须在 60-7200 秒之间','error');try{const r=await apiRequest('/api/generation/timeout',{method:'POST',body:JSON.stringify({image_timeout:imageTimeout,video_timeout:videoTimeout})});if(!r){console.error('保存请求失败');return}const d=await r.json();console.log('保存结果:',d);if(d.success){showToast('生成超时配置保存成功','success');await new Promise(r=>setTimeout(r,200));await loadGenerationTimeout()}else{console.error('保存失败:',d);showToast('保存失败','error')}}catch(e){console.error('保存失败:',e);showToast('保存失败: '+e.message,'error')}},
         toggleATAutoRefresh=async()=>{try{const enabled=$('atAutoRefreshToggle').checked;const r=await apiRequest('/api/token-refresh/enabled',{method:'POST',body:JSON.stringify({enabled:enabled})});if(!r){$('atAutoRefreshToggle').checked=!enabled;return}const d=await r.json();if(d.success){showToast(enabled?'AT自动刷新已启用':'AT自动刷新已禁用','success')}else{showToast('操作失败: '+(d.detail||'未知错误'),'error');$('atAutoRefreshToggle').checked=!enabled}}catch(e){showToast('操作失败: '+e.message,'error');$('atAutoRefreshToggle').checked=!enabled}},
         loadATAutoRefreshConfig=async()=>{try{const r=await apiRequest('/api/token-refresh/config');if(!r)return;const d=await r.json();if(d.success&&d.config){$('atAutoRefreshToggle').checked=d.config.at_auto_refresh_enabled||false}else{console.error('AT自动刷新配置数据格式错误:',d)}}catch(e){console.error('加载AT自动刷新配置失败:',e)}},
-        loadLogs=async()=>{try{const r=await apiRequest('/api/logs?limit=100');if(!r)return;const logs=await r.json();window._logsData=logs;const tb=$('logsTableBody');tb.innerHTML=logs.map((l,i)=>`<tr><td class="py-2.5 px-3">${l.operation}</td><td class="py-2.5 px-3"><span class="text-xs ${l.token_email?'text-blue-600':'text-muted-foreground'}">${l.token_email||'未知'}</span></td><td class="py-2.5 px-3"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs ${l.status_code===200?'bg-green-50 text-green-700':'bg-red-50 text-red-700'}">${l.status_code}</span></td><td class="py-2.5 px-3">${l.duration.toFixed(2)}</td><td class="py-2.5 px-3 text-xs text-muted-foreground">${l.created_at?new Date(l.created_at).toLocaleString('zh-CN'):'-'}</td><td class="py-2.5 px-3"><button onclick="showLogDetail(${i})" class="text-xs text-primary hover:underline">详情</button></td></tr>`).join('')}catch(e){console.error('加载日志失败:',e)}},
-        showLogDetail=(idx)=>{const l=window._logsData[idx];if(!l)return;let reqBody='',resBody='';try{reqBody=l.request_body?JSON.stringify(JSON.parse(l.request_body),null,2):'-'}catch{reqBody=l.request_body||'-'}try{resBody=l.response_body?JSON.stringify(JSON.parse(l.response_body),null,2):'-'}catch{resBody=l.response_body||'-'}$('logDetailContent').innerHTML=`<div class="space-y-4"><div><p class="text-sm font-medium mb-1">操作</p><p class="text-sm text-muted-foreground">${l.operation}</p></div><div><p class="text-sm font-medium mb-1">Token</p><p class="text-sm text-muted-foreground">${l.token_email||'未知'}</p></div><div><p class="text-sm font-medium mb-1">状态码</p><p class="text-sm"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs ${l.status_code===200?'bg-green-50 text-green-700':'bg-red-50 text-red-700'}">${l.status_code}</span></p></div><div><p class="text-sm font-medium mb-1">耗时</p><p class="text-sm text-muted-foreground">${l.duration.toFixed(2)} 秒</p></div><div><p class="text-sm font-medium mb-1">时间</p><p class="text-sm text-muted-foreground">${l.created_at?new Date(l.created_at).toLocaleString('zh-CN'):'-'}</p></div><div><p class="text-sm font-medium mb-1">请求内容</p><pre class="text-xs bg-muted p-2 rounded overflow-auto max-h-40">${reqBody}</pre></div><div><p class="text-sm font-medium mb-1">响应内容</p><pre class="text-xs bg-muted p-2 rounded overflow-auto max-h-40">${resBody}</pre></div></div>`;$('logDetailModal').classList.remove('hidden')},
+        loadLogs=async()=>{try{const r=await apiRequest('/api/logs?limit=100');if(!r)return;const logs=await r.json();window._logsData=logs;const tb=$('logsTableBody');tb.innerHTML=logs.map((l,i)=>`<tr><td class="py-2.5 px-3">${l.operation}</td><td class="py-2.5 px-3"><span class="text-xs ${l.token_email?'text-blue-600':'text-muted-foreground'}">${l.token_email||'未知'}</span></td><td class="py-2.5 px-3"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs ${l.status_code===-1?'bg-blue-50 text-blue-700':l.status_code===200?'bg-green-50 text-green-700':'bg-red-50 text-red-700'}">${l.status_code===-1?'生成中':l.status_code}</span></td><td class="py-2.5 px-3">${l.duration===-1?'生成中':l.duration.toFixed(2)+'秒'}</td><td class="py-2.5 px-3 text-xs text-muted-foreground">${l.created_at?new Date(l.created_at).toLocaleString('zh-CN'):'-'}</td><td class="py-2.5 px-3"><button onclick="showLogDetail(${i})" class="text-xs text-primary hover:underline">详情</button></td></tr>`).join('')}catch(e){console.error('加载日志失败:',e)}},
+        showLogDetail=(idx)=>{const l=window._logsData[idx];if(!l)return;let reqBody='',resBody='';try{reqBody=l.request_body?JSON.stringify(JSON.parse(l.request_body),null,2):'-'}catch{reqBody=l.request_body||'-'}try{resBody=l.response_body?JSON.stringify(JSON.parse(l.response_body),null,2):'-'}catch{resBody=l.response_body||'-'}let progressInfo='';if(l.status_code===-1&&l.task_status){progressInfo=`<div><p class="text-sm font-medium mb-1">任务状态</p><p class="text-sm text-blue-600">${l.task_status}${l.progress!==undefined?' ('+Math.round(l.progress*100)+'%)':''}</p></div>`}$('logDetailContent').innerHTML=`<div class="space-y-4"><div><p class="text-sm font-medium mb-1">操作</p><p class="text-sm text-muted-foreground">${l.operation}</p></div><div><p class="text-sm font-medium mb-1">Token</p><p class="text-sm text-muted-foreground">${l.token_email||'未知'}</p></div><div><p class="text-sm font-medium mb-1">状态码</p><p class="text-sm"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs ${l.status_code===-1?'bg-blue-50 text-blue-700':l.status_code===200?'bg-green-50 text-green-700':'bg-red-50 text-red-700'}">${l.status_code===-1?'生成中':l.status_code}</span></p></div>${progressInfo}<div><p class="text-sm font-medium mb-1">耗时</p><p class="text-sm text-muted-foreground">${l.duration===-1?'生成中':l.duration.toFixed(2)+' 秒'}</p></div><div><p class="text-sm font-medium mb-1">时间</p><p class="text-sm text-muted-foreground">${l.created_at?new Date(l.created_at).toLocaleString('zh-CN'):'-'}</p></div><div><p class="text-sm font-medium mb-1">请求内容</p><pre class="text-xs bg-muted p-2 rounded overflow-auto max-h-40">${reqBody}</pre></div><div><p class="text-sm font-medium mb-1">响应内容</p><pre class="text-xs bg-muted p-2 rounded overflow-auto max-h-40">${resBody}</pre></div></div>`;$('logDetailModal').classList.remove('hidden')},
         closeLogDetailModal=()=>{$('logDetailModal').classList.add('hidden')},
         refreshLogs=async()=>{await loadLogs()},
         showToast=(m,t='info')=>{const d=document.createElement('div'),bc={success:'bg-green-600',error:'bg-destructive',info:'bg-primary'};d.className=`fixed bottom-4 right-4 ${bc[t]||bc.info} text-white px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium z-50 animate-slide-up`;d.textContent=m;document.body.appendChild(d);setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .3s';setTimeout(()=>d.parentNode&&document.body.removeChild(d),300)},2000)},
         logout=()=>{if(!confirm('确定要退出登录吗?'))return;localStorage.removeItem('adminToken');location.href='/login'},
-        switchTab=t=>{const cap=n=>n.charAt(0).toUpperCase()+n.slice(1);['tokens','settings','webdav','logs','test'].forEach(n=>{const active=n===t;$(`panel${cap(n)}`).classList.toggle('hidden',!active);$(`tab${cap(n)}`).classList.toggle('border-primary',active);$(`tab${cap(n)}`).classList.toggle('text-primary',active);$(`tab${cap(n)}`).classList.toggle('border-transparent',!active);$(`tab${cap(n)}`).classList.toggle('text-muted-foreground',!active)});if(t==='settings'){loadAdminConfig();loadProxyConfig();loadProxyPool();loadWatermarkFreeConfig();loadCloudflareSolverConfig();loadCfState();loadCacheConfig();loadGenerationTimeout();loadATAutoRefreshConfig()}else if(t==='logs'){loadLogs()}else if(t==='webdav'){loadWebdavConfig();loadWebdavStats();refreshWebdavVideos();refreshUploadLogs()}},
+        switchTab=t=>{const cap=n=>n.charAt(0).toUpperCase()+n.slice(1);['tokens','settings','logs','test'].forEach(n=>{const active=n===t;$(`panel${cap(n)}`).classList.toggle('hidden',!active);$(`tab${cap(n)}`).classList.toggle('border-primary',active);$(`tab${cap(n)}`).classList.toggle('text-primary',active);$(`tab${cap(n)}`).classList.toggle('border-transparent',!active);$(`tab${cap(n)}`).classList.toggle('text-muted-foreground',!active)});if(t==='settings'){loadAdminConfig();loadProxyConfig();loadProxyPool();loadWatermarkFreeConfig();loadCloudflareSolverConfig();loadCfState();loadCacheConfig();loadGenerationTimeout();loadATAutoRefreshConfig()}else if(t==='logs'){loadLogs()}else if(t==='webdav'){loadWebdavConfig();loadWebdavStats();refreshWebdavVideos();refreshUploadLogs()}},
         // WebDAV functions
         toggleWebdavOptions=()=>{const enabled=$('cfgWebdavEnabled').checked;$('webdavOptions').style.display=enabled?'block':'none'},
         loadWebdavConfig=async()=>{try{const r=await apiRequest('/api/webdav/config');if(!r)return;const d=await r.json();if(d.success&&d.config){$('cfgWebdavEnabled').checked=d.config.webdav_enabled||false;$('cfgWebdavUrl').value=d.config.webdav_url||'';$('cfgWebdavUsername').value=d.config.webdav_username||'';$('cfgWebdavPassword').value=d.config.webdav_password||'';$('cfgWebdavUploadPath').value=d.config.webdav_upload_path||'/video';$('cfgAutoDeleteEnabled').checked=d.config.auto_delete_enabled||false;$('cfgAutoDeleteDays').value=d.config.auto_delete_days||30;toggleWebdavOptions()}}catch(e){console.error('加载WebDAV配置失败:',e)}},

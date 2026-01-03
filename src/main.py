@@ -16,7 +16,6 @@ from .services.load_balancer import LoadBalancer
 from .services.sora_client import SoraClient
 from .services.generation_handler import GenerationHandler
 from .services.concurrency_manager import ConcurrencyManager
-from .services.webdav_manager import WebDAVManager
 from .services.token_cache import get_token_cache
 from .api import routes as api_routes
 from .api import admin as admin_routes
@@ -45,15 +44,14 @@ db = Database()
 token_manager = TokenManager(db)
 proxy_manager = ProxyManager(db)
 concurrency_manager = ConcurrencyManager()
-webdav_manager = WebDAVManager(db)
 load_balancer = LoadBalancer(token_manager, concurrency_manager)
 sora_client = SoraClient(proxy_manager)
-generation_handler = GenerationHandler(sora_client, token_manager, load_balancer, db, proxy_manager, concurrency_manager, webdav_manager)
+generation_handler = GenerationHandler(sora_client, token_manager, load_balancer, db, proxy_manager, concurrency_manager)
 
 # Set dependencies for route modules
 api_routes.set_generation_handler(generation_handler)
-admin_routes.set_dependencies(token_manager, proxy_manager, db, generation_handler, concurrency_manager, webdav_manager)
-public_routes.set_dependencies(token_manager, db, generation_handler, webdav_manager)
+admin_routes.set_dependencies(token_manager, proxy_manager, db, generation_handler, concurrency_manager)
+public_routes.set_dependencies(token_manager, db, generation_handler)
 openai_routes.set_generation_handler(generation_handler)
 sora_routes.set_generation_handler(generation_handler)
 
@@ -151,9 +149,6 @@ async def startup_event():
     cloudflare_config = await db.get_cloudflare_solver_config()
     config.set_cloudflare_solver_enabled(cloudflare_config.solver_enabled)
     config.set_cloudflare_solver_api_url(cloudflare_config.solver_api_url)
-
-    # Ensure WebDAV config row exists
-    await db.ensure_webdav_config_row()
 
     # Initialize concurrency manager with all tokens
     all_tokens = await db.get_all_tokens()
