@@ -25,8 +25,6 @@ class SoraClient:
 
     def __init__(self, proxy_manager: ProxyManager):
         self.proxy_manager = proxy_manager
-        self.base_url = config.sora_base_url
-        self.timeout = config.sora_timeout
         # 持久化 session 字典，按 token 分组维护 cookie
         self._sessions: Dict[str, AsyncSession] = {}
 
@@ -155,7 +153,7 @@ class SoraClient:
             sentinel_token=sentinel
         )
 
-        url = f"{self.base_url}{endpoint}"
+        url = f"{config.sora_base_url}{endpoint}"
         
         # 使用持久化 session 维护 cookie（会自动应用全局 Cloudflare cookies）
         session = await self._get_session(token)

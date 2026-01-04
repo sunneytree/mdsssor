@@ -213,7 +213,9 @@ class Config:
     @property
     def cf_enabled(self) -> bool:
         """Get Cloudflare solver enabled status"""
-        return self._config.get("cloudflare", {}).get("enabled", False)
+        cf_config = self._config.get("cloudflare", {})
+        # Support both 'enabled' and legacy 'solver_enabled'
+        return cf_config.get("enabled", cf_config.get("solver_enabled", False))
 
     def set_cf_enabled(self, enabled: bool):
         """Set Cloudflare solver enabled/disabled"""
@@ -235,7 +237,9 @@ class Config:
     @property
     def cf_api_url(self) -> str:
         """Get Cloudflare solver base URL (e.g., http://localhost:8000)"""
-        return self._config.get("cloudflare", {}).get("api_url", "http://localhost:8000")
+        cf_config = self._config.get("cloudflare", {})
+        # Support both 'api_url' and legacy 'solver_api_url'
+        return cf_config.get("api_url", cf_config.get("solver_api_url", "http://localhost:8000"))
 
     def set_cf_api_url(self, url: str):
         """Set Cloudflare solver base URL"""
