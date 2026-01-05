@@ -514,7 +514,7 @@ async def _process_video_generation_v2(video_id: str):
         except Exception:
             pass
 
-@router.post("/v1/videos", status_code=201)
+@router.post("/v1/videos", status_code=200)
 async def create_video(
     request: Request,
     prompt: str = Form(None, description="Video generation prompt"),
@@ -685,8 +685,9 @@ async def create_video(
             asyncio.create_task(_process_video_generation_v2(video_id))
             
             # Return immediately with in_progress status (new-api-main compatible)
+            # IMPORTANT: Must return 200 OK, not 201 Created - new-api checks for 200
             return JSONResponse(
-                status_code=201,
+                status_code=200,
                 content={
                     "id": video_id,
                     "object": "video",
@@ -717,8 +718,9 @@ async def create_video(
         
         if url:
             # Return completed response (new-api-main compatible)
+            # IMPORTANT: Must return 200 OK, not 201 Created - new-api checks for 200
             return JSONResponse(
-                status_code=201,
+                status_code=200,
                 content={
                     "id": video_id,
                     "object": "video",
@@ -947,7 +949,7 @@ async def get_video_content(
 # /v1/videos/{video_id}/remix - Video Remix (new-api-main compatible)
 # ============================================================
 
-@router.post("/v1/videos/{video_id}/remix", status_code=201)
+@router.post("/v1/videos/{video_id}/remix", status_code=200)
 async def remix_video(
     video_id: str,
     request: Request,
@@ -963,6 +965,7 @@ async def remix_video(
     
     Creates a new video based on an existing video with a new prompt.
     Compatible with new-api-main sora2 relay format.
+    IMPORTANT: Returns 200 OK (not 201) for new-api compatibility.
     
     **Request:**
     - video_id: Source video ID to remix from
@@ -1076,8 +1079,9 @@ async def remix_video(
             # Start background task
             asyncio.create_task(_process_video_generation_v2(new_video_id))
             
+            # IMPORTANT: Must return 200 OK for new-api compatibility
             return JSONResponse(
-                status_code=201,
+                status_code=200,
                 content={
                     "id": new_video_id,
                     "object": "video",
@@ -1106,8 +1110,9 @@ async def remix_video(
         url = video_info.get("url") or _extract_url_from_chunks(chunks)
         
         if url:
+            # IMPORTANT: Must return 200 OK for new-api compatibility
             return JSONResponse(
-                status_code=201,
+                status_code=200,
                 content={
                     "id": new_video_id,
                     "object": "video",

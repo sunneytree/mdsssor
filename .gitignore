@@ -53,6 +53,9 @@ Thumbs.db
 sora2api-main/
 sora2api/
 原sora2api/
-
+new-api-main/
+new-api/
+原new-api/
+sora2api-main/.env
 # Test files
 test_concurrent.py
