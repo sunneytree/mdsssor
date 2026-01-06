@@ -231,28 +231,18 @@ class SoraClient:
 
             # Handle 429/403 rate limit with retry (Cloudflare challenge can return either)
             if response.status_code in [429, 403]:
-                # 激进模式：如果启用了 CF solver，所有 429/403 都尝试获取 CF 凭据
-                should_try_cf = config.cf_enabled
-                
-                # If CF solver not enabled, use normal retry
+                # If CF solver not enabled, fail fast without retry
                 if not config.cf_enabled:
-                    cf_retry_count += 1
-                    if cf_retry_count >= MAX_CF_RETRY_WITHOUT_SOLVER:
-                        error_msg = f"429/403 错误，CF Solver 未启用，已重试 {cf_retry_count} 次"
-                        print(f"❌ {error_msg}")
-                        debug_logger.log_error(
-                            error_message=error_msg,
-                            status_code=response.status_code,
-                            response_text=response.text
-                        )
-                        raise Exception(error_msg)
-                    else:
-                        wait_time = min((cf_retry_count + 1) * 3, 15) + random.uniform(0.5, 1.5)
-                        print(f"⚠️ {response.status_code} (CF Solver 未启用)，{wait_time:.1f}秒后重试 ({cf_retry_count}/{MAX_CF_RETRY_WITHOUT_SOLVER})")
-                        await asyncio.sleep(wait_time)
-                        attempt += 1
-                        continue
-                
+                    error_msg = f"HTTP {response.status_code} rate limited"
+                    debug_logger.log_error(
+                        error_message=error_msg,
+                        status_code=response.status_code,
+                        response_text=response.text
+                    )
+                    raise Exception(error_msg)
+
+                should_try_cf = config.cf_enabled
+
                 # CF solver enabled - try to refresh credentials for all 429/403
                 if should_try_cf:
                     # Only refresh if we haven't already tried in this request cycle

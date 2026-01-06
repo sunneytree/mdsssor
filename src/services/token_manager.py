@@ -111,6 +111,8 @@ class TokenManager:
                     dict(response.headers),
                     response_text,
                 )
+                if is_cf and not config.cf_enabled:
+                    return response
                 
                 if is_cf and attempt < max_cf_retries:
                     print(
