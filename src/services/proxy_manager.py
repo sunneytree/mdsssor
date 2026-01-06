@@ -74,7 +74,7 @@ class ProxyManager:
             return None
         
         # 1. Handle st5 prefix format: "st5 ip:port:user:pass" -> "socks5://user:pass@ip:port"
-        st5_match = re.match(r'^(?i)st5\s+(.+)$', line)
+        st5_match = re.match(r'^st5\s+(.+)$', line, re.IGNORECASE)
         if st5_match:
             rest = st5_match.group(1)
             # st5 格式可能带@或不带@
