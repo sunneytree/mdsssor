@@ -54,7 +54,7 @@
         <!-- Token 管理面板 -->
         <div id="panelTokens">
             <!-- 统计卡片 -->
-            <div class="grid gap-4 grid-cols-2 md:grid-cols-5 mb-6">
+            <div class="grid gap-4 grid-cols-2 md:grid-cols-7 mb-6">
                 <div class="rounded-lg border border-border bg-background p-4">
                     <p class="text-sm font-medium text-muted-foreground mb-2">Token 总数</p>
                     <h3 class="text-xl font-bold" id="statTotal">-</h3>
@@ -74,6 +74,14 @@
                 <div class="rounded-lg border border-border bg-background p-4">
                     <p class="text-sm font-medium text-muted-foreground mb-2">今日错误/总错误</p>
                     <h3 class="text-xl font-bold text-destructive" id="statErrors">-</h3>
+                </div>
+                <div class="rounded-lg border border-border bg-background p-4">
+                    <p class="text-sm font-medium text-muted-foreground mb-2">Chat ????</p>
+                    <h3 class="text-xl font-bold text-amber-600" id="statChatConcurrency">-</h3>
+                </div>
+                <div class="rounded-lg border border-border bg-background p-4">
+                    <p class="text-sm font-medium text-muted-foreground mb-2">Videos ????</p>
+                    <h3 class="text-xl font-bold text-indigo-600" id="statVideoConcurrency">-</h3>
                 </div>
             </div>
 
@@ -961,7 +969,7 @@
         const $=(id)=>document.getElementById(id),
         checkAuth=()=>{const t=localStorage.getItem('adminToken');return t||(location.href='/login',null),t},
         apiRequest=async(url,opts={})=>{const t=checkAuth();if(!t)return null;const r=await fetch(url,{...opts,headers:{...opts.headers,Authorization:`Bearer ${t}`,'Content-Type':'application/json'}});return r.status===401?(localStorage.removeItem('adminToken'),location.href='/login',null):r},
-        loadStats=async()=>{try{const r=await apiRequest('/api/stats');if(!r)return;const d=await r.json();$('statTotal').textContent=d.total_tokens||0;$('statActive').textContent=d.active_tokens||0;$('statImages').textContent=(d.today_images||0)+'/'+(d.total_images||0);$('statVideos').textContent=(d.today_videos||0)+'/'+(d.total_videos||0);$('statErrors').textContent=(d.today_errors||0)+'/'+(d.total_errors||0)}catch(e){console.error('加载统计失败:',e)}},
+        loadStats=async()=>{try{const r=await apiRequest('/api/stats');if(!r)return;const d=await r.json();$('statTotal').textContent=d.total_tokens||0;$('statActive').textContent=d.active_tokens||0;$('statImages').textContent=(d.today_images||0)+'/'+(d.total_images||0);$('statVideos').textContent=(d.today_videos||0)+'/'+(d.total_videos||0);$('statErrors').textContent=(d.today_errors||0)+'/'+(d.total_errors||0);$('statChatConcurrency').textContent=d.chat_inflight??0;$('statVideoConcurrency').textContent=d.video_inflight??0}catch(e){console.error('加载统计失败:',e)}},
         loadTokens=async()=>{try{const r=await apiRequest('/api/tokens');if(!r)return;allTokens=await r.json();filterTokens()}catch(e){console.error('加载Token失败:',e)}},
         filterTokens=()=>{const filter=$('tokenStatusFilter').value;const now=new Date();filteredTokens=allTokens.filter(t=>{switch(filter){case 'active':return t.is_active;case 'inactive':return !t.is_active;case 'sora2':return t.sora2_supported===true;case 'nosora2':return t.sora2_supported!==true;case 'expired':return t.expiry_time&&new Date(t.expiry_time)<now;default:return true}});currentPage=1;renderTokens()},
         changePageSize=()=>{pageSize=parseInt($('pageSize').value);currentPage=1;renderTokens()},

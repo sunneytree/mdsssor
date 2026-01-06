@@ -982,6 +982,7 @@ async def get_stats(token: str = Depends(verify_admin_token)):
     # Backfill missing stats rows for legacy/imported tokens
     await db.ensure_token_stats_rows()
     stats = await db.get_stats()
+    inflight = await db.get_inflight_counts()
 
     return {
         "total_tokens": len(tokens),
@@ -991,7 +992,9 @@ async def get_stats(token: str = Depends(verify_admin_token)):
         "today_images": stats.get("today_images", 0),
         "today_videos": stats.get("today_videos", 0),
         "total_errors": stats.get("total_errors", 0),
-        "today_errors": stats.get("today_errors", 0)
+        "today_errors": stats.get("today_errors", 0),
+        "chat_inflight": inflight.get("chat_inflight", 0),
+        "video_inflight": inflight.get("video_inflight", 0)
     }
 
 # Username activation endpoint

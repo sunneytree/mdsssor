@@ -1289,6 +1289,28 @@ class Database:
                 "today_videos": 0,
                 "today_errors": 0
             }
+
+    async def get_inflight_counts(self) -> dict:
+        """Get current in-flight task counts by request interface type"""
+        async with self._connect() as db:
+            cursor = await db.execute("""
+                SELECT 
+                    SUM(CASE WHEN status IN ('processing','in_progress') AND task_id LIKE 'task_%' THEN 1 ELSE 0 END) as chat_inflight,
+                    SUM(CASE WHEN status IN ('processing','in_progress') AND task_id NOT LIKE 'task_%' THEN 1 ELSE 0 END) as video_inflight
+                FROM tasks
+            """)
+            row = await cursor.fetchone()
+            if row:
+                if isinstance(row, dict):
+                    return {
+                        "chat_inflight": row.get("chat_inflight") or 0,
+                        "video_inflight": row.get("video_inflight") or 0
+                    }
+                return {
+                    "chat_inflight": row[0] or 0,
+                    "video_inflight": row[1] or 0
+                }
+            return {"chat_inflight": 0, "video_inflight": 0}
     
     async def increment_image_count(self, token_id: int):
         """Increment image generation count - uses row-level lock for MySQL"""
