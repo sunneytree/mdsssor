@@ -18,6 +18,22 @@ class ProxyManager:
         self._proxy_file_path = Path(__file__).parent.parent.parent / "data" / "proxy.txt"
         self._proxy_status: Dict[str, dict] = {}  # 代理状态缓存
     
+    def _split_concatenated_proxies(self, text: str) -> List[str]:
+        """Split concatenated proxies like 'socks5://...socks5://...' into separate lines
+        
+        Handles cases where multiple proxies are pasted together without newlines.
+        """
+        import re
+        # Split by protocol prefixes, keeping the delimiter
+        # This handles: socks5://...socks5://... or http://...socks5://...
+        parts = re.split(r'(?=(?:https?|socks5h?)://)', text)
+        result = []
+        for part in parts:
+            part = part.strip()
+            if part:
+                result.append(part)
+        return result
+    
     def _load_proxy_pool(self) -> List[str]:
         """Load proxy list from data/proxy.txt"""
         proxies = []
@@ -27,10 +43,13 @@ class ProxyManager:
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith("#"):
-                            # Convert to standard proxy URL format
-                            proxy_url = self._parse_proxy_line(line)
-                            if proxy_url:
-                                proxies.append(proxy_url)
+                            # Split concatenated proxies (e.g., socks5://...socks5://...)
+                            split_proxies = self._split_concatenated_proxies(line)
+                            for proxy_line in split_proxies:
+                                # Convert to standard proxy URL format
+                                proxy_url = self._parse_proxy_line(proxy_line)
+                                if proxy_url:
+                                    proxies.append(proxy_url)
             except Exception as e:
                 print(f"⚠️ Failed to load proxy pool: {e}")
         return proxies
