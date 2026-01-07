@@ -70,11 +70,18 @@ def get_random_user_agent() -> str:
     return random.choice(MOBILE_USER_AGENTS)
 
 
+def generate_device_id() -> str:
+    """生成随机的 oai-device-id (UUID v4 格式)"""
+    import uuid
+    return str(uuid.uuid4())
+
+
 def build_sora_headers(
     token: str,
     user_agent: Optional[str] = None,
     content_type: Optional[str] = None,
-    sentinel_token: Optional[str] = None
+    sentinel_token: Optional[str] = None,
+    device_id: Optional[str] = None
 ) -> dict:
     """构建 Sora API 请求头
     
@@ -83,6 +90,7 @@ def build_sora_headers(
         user_agent: 自定义 User-Agent (默认随机选择)
         content_type: Content-Type (默认 application/json)
         sentinel_token: openai-sentinel-token (仅生成请求需要)
+        device_id: oai-device-id (默认生成随机 UUID)
     
     Returns:
         完整的请求头字典
@@ -91,6 +99,8 @@ def build_sora_headers(
         **CHROME_HEADERS,
         "Authorization": f"Bearer {token}",
         "User-Agent": user_agent or get_random_user_agent(),
+        "oai-device-id": device_id or generate_device_id(),
+        "oai-language": "en-US",
     }
     
     if content_type:
