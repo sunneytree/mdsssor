@@ -100,6 +100,18 @@ def get_pow_token_mock() -> str:
     return b64_like(180, suffix="~S", urlsafe=False)
 
 
+def post_sentinel_req(base_url: str, flow: str, pow_token: str) -> Dict:
+    """请求 /backend-api/sentinel/req 获取 token 响应"""
+    import requests
+
+    url = f"{base_url.rstrip('/')}/backend-api/sentinel/req"
+    payload = {"p": pow_token, "flow": flow, "id": generate_id()}
+
+    r = requests.post(url, json=payload, timeout=10)
+    r.raise_for_status()
+    return r.json()
+
+
 def build_openai_sentinel_token(flow: str, resp: Dict, pow_token: str) -> str:
     """构建 openai-sentinel-token 字符串"""
     token_payload = {

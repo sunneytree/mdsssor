@@ -1,21 +1,7 @@
 # client_test.py
 import json
-import requests
-from typing import Dict
 
-from src.core.http_utils import (
-    generate_id,
-    get_pow_token_mock,
-    build_openai_sentinel_token,
-)
-
-def post_sentinel_req(base_url: str, flow: str, pow_token: str) -> Dict:
-    url = f"{base_url}/backend-api/sentinel/req"
-    payload = {"p": pow_token, "flow": flow, "id": generate_id()}
-
-    r = requests.post(url, json=payload, timeout=10)
-    r.raise_for_status()
-    return r.json()
+from src.core.http_utils import get_pow_token_mock, post_sentinel_req, build_openai_sentinel_token
 
 def main():
     base_url = "https://chatgpt.com/"
