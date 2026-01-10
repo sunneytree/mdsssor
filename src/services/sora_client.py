@@ -17,7 +17,15 @@ from .cloudflare_solver import (
 )
 from ..core.config import config
 from ..core.logger import debug_logger
-from ..core.http_utils import build_sora_headers, DEFAULT_USER_AGENT, get_random_fingerprint, get_random_user_agent
+from ..core.http_utils import (
+    build_sora_headers,
+    DEFAULT_USER_AGENT,
+    get_random_fingerprint,
+    get_random_user_agent,
+    build_openai_sentinel_token,
+    generate_id,
+    get_pow_token_mock,
+)
 
 
 class SoraClient:
@@ -31,17 +39,45 @@ class SoraClient:
         self._sessions: Dict[str, AsyncSession] = {}
 
     @staticmethod
-    def _generate_sentinel_token() -> str:
-        """
-        生成 openai-sentinel-token
-        根据测试文件的逻辑，传入任意随机字符即可
-        生成10-20个字符的随机字符串（字母+数字）
-        """
+    def _generate_sentinel_token_fallback() -> str:
+        """生成随机 openai-sentinel-token（sentinel/req 失败时回退）"""
         length = random.randint(10, 20)
-        random_str = "".join(
-            random.choices(string.ascii_letters + string.digits, k=length)
-        )
-        return random_str
+        return "".join(random.choices(string.ascii_letters + string.digits, k=length))
+
+    async def _generate_sentinel_token(
+        self,
+        user_agent: str,
+        proxy_url: Optional[str],
+        flow: str = "sora_2_create_task"
+    ) -> str:
+        """
+        尝试通过 /sentinel/req 生成 openai-sentinel-token，失败时回退为随机字符串
+        """
+        pow_token = get_pow_token_mock()
+        payload = {"p": pow_token, "flow": flow, "id": generate_id()}
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Origin": "https://chatgpt.com",
+            "Referer": "https://chatgpt.com/",
+            "User-Agent": user_agent,
+        }
+
+        try:
+            async with AsyncSession() as session:
+                response = await session.post(
+                    "https://chatgpt.com/backend-api/sentinel/req",
+                    json=payload,
+                    headers=headers,
+                    timeout=10,
+                    proxy=proxy_url,
+                    impersonate=get_random_fingerprint()
+                )
+            if response.status_code != 200:
+                raise Exception(f"sentinel/req failed: {response.status_code}")
+            resp_json = response.json()
+            return build_openai_sentinel_token(flow, resp_json, pow_token)
+        except Exception:
+            return self._generate_sentinel_token_fallback()
 
     @staticmethod
     def is_storyboard_prompt(prompt: str) -> bool:
@@ -148,7 +184,10 @@ class SoraClient:
 
         # 使用全局 Cloudflare 状态的 user_agent，如果有的话
         user_agent = cf_state.user_agent or DEFAULT_USER_AGENT
-        sentinel = self._generate_sentinel_token() if add_sentinel_token else None
+        sentinel = await self._generate_sentinel_token(
+            user_agent=user_agent,
+            proxy_url=proxy_url
+        ) if add_sentinel_token else None
         content_type = None if multipart else "application/json"
         
         headers = build_sora_headers(

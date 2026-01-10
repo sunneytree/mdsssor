@@ -1,6 +1,9 @@
 """HTTP utilities - Common HTTP headers and request helpers"""
+import base64
+import json
+import os
 import random
-from typing import Optional
+from typing import Optional, Dict
 
 # 手机指纹列表（curl_cffi 只支持这些手机指纹）
 MOBILE_FINGERPRINTS = [
@@ -74,6 +77,39 @@ def generate_device_id() -> str:
     """生成随机的 oai-device-id (UUID v4 格式)"""
     import uuid
     return str(uuid.uuid4())
+
+
+def generate_id() -> str:
+    """生成随机 UUID，用于 openai-sentinel-token 请求/响应"""
+    import uuid
+    return str(uuid.uuid4())
+
+
+def b64_like(n_bytes: int, suffix: str = "", urlsafe: bool = False) -> str:
+    """生成类似 base64 的随机字符串（用于 pow token mock）"""
+    raw = os.urandom(n_bytes)
+    if urlsafe:
+        s = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+    else:
+        s = base64.b64encode(raw).decode("ascii")
+    return s + suffix
+
+
+def get_pow_token_mock() -> str:
+    """生成 mock pow token（用于测试/调试）"""
+    return b64_like(180, suffix="~S", urlsafe=False)
+
+
+def build_openai_sentinel_token(flow: str, resp: Dict, pow_token: str) -> str:
+    """构建 openai-sentinel-token 字符串"""
+    token_payload = {
+        "p": pow_token,
+        "t": resp.get("turnstile", {}).get("dx", ""),
+        "c": resp.get("token", ""),
+        "id": generate_id(),
+        "flow": flow
+    }
+    return json.dumps(token_payload, ensure_ascii=False, separators=(",", ":"))
 
 
 def build_sora_headers(
