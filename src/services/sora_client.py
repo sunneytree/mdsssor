@@ -46,11 +46,15 @@ class SoraClient:
         proxy_url: Optional[str],
         fingerprint: str,
         auth_token: Optional[str] = None,
-        flow: str = "sora_2_create_task"
+        flow: str = "sora_2_create_task",
+        token_id: Optional[int] = None
     ) -> str:
         """
         尝试通过 /sentinel/req 生成 openai-sentinel-token，失败时抛出异常
         """
+        if proxy_url is None:
+            proxy_url = await self.proxy_manager.get_proxy_url(token_id)
+
         pow_token = get_pow_token_mock(user_agent=user_agent)
         payload = {"p": pow_token, "flow": flow, "id": generate_id()}
         headers = {
@@ -204,6 +208,7 @@ class SoraClient:
             proxy_url=proxy_url,
             fingerprint=fingerprint,
             auth_token=token,
+            token_id=token_id,
         ) if add_sentinel_token else None
         content_type = None if multipart else "application/json"
         
@@ -391,6 +396,27 @@ class SoraClient:
                     )
                     raise Exception(error_msg)
 
+            # Retry on heavy load message (even if status is not 5xx)
+            heavy_load_message = "We're under heavy load, please try again later."
+            error_detail = None
+            if response_json and isinstance(response_json, dict):
+                error_obj = response_json.get("error", {})
+                if isinstance(error_obj, dict):
+                    error_detail = error_obj.get("message")
+            heavy_load_detected = (
+                (error_detail and heavy_load_message in error_detail)
+                or (response.text and heavy_load_message in response.text)
+            )
+            if heavy_load_detected:
+                heavy_load_max_retries = min(max_retries, 3)
+                if attempt < heavy_load_max_retries:
+                    wait_time = min((attempt + 1) * 2, 10) + random.uniform(0.5, 1.5)
+                    print(f"⚠️ Heavy load detected, retrying in {wait_time:.1f}s ({attempt + 1}/{heavy_load_max_retries})...")
+                    await asyncio.sleep(wait_time)
+                    attempt += 1
+                    continue
+                raise Exception(heavy_load_message)
+
             # Check status
             if response.status_code not in [200, 201]:
                 # Try to extract error message from response JSON
@@ -445,6 +471,28 @@ class SoraClient:
     async def get_user_info(self, token: str) -> Dict[str, Any]:
         """Get user information"""
         return await self._make_request("GET", "/me", token)
+
+    async def enhance_prompt(self, prompt: str, token: str, expansion_level: str = "medium",
+                             duration_s: Optional[int] = None) -> Dict[str, Any]:
+        """Enhance prompt via Sora editor endpoint
+
+        Args:
+            prompt: Original prompt text
+            token: Access token
+            expansion_level: short | medium | long
+            duration_s: Optional duration in seconds
+
+        Returns:
+            Response containing enhanced_prompt
+        """
+        json_data = {
+            "prompt": prompt,
+            "expansion_level": expansion_level
+        }
+        if duration_s is not None:
+            json_data["duration_s"] = duration_s
+
+        return await self._make_request("POST", "/editor/enhance_prompt", token, json_data=json_data)
 
     async def get_profile_feed(self, token: str, limit: int = 8) -> Dict[str, Any]:
         """Get user's profile feed (published posts)

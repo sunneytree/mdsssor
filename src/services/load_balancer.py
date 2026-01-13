@@ -68,7 +68,8 @@ class LoadBalancer:
         """
         # 后台触发刷新检查（非阻塞）
         if config.at_auto_refresh_enabled:
-            asyncio.create_task(self._background_refresh_check())
+            if not self._refresh_task or self._refresh_task.done():
+                self._refresh_task = asyncio.create_task(self._background_refresh_check())
 
         active_tokens = await self.token_manager.get_active_tokens()
 

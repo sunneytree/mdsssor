@@ -67,7 +67,9 @@ class DebugLogger:
         proxy: Optional[str] = None
     ):
         """Log API request details to log.txt"""
-        
+        if not config.debug_enabled or not config.debug_log_requests:
+            return
+
         try:
             self._write_separator()
             self.logger.info(f"🔵 [REQUEST] {self._format_timestamp()}")
@@ -131,7 +133,9 @@ class DebugLogger:
         duration_ms: Optional[float] = None
     ):
         """Log API response details to log.txt"""
-        
+        if not config.debug_enabled or not config.debug_log_responses:
+            return
+
         try:
             self._write_separator()
             self.logger.info(f"🟢 [RESPONSE] {self._format_timestamp()}")
@@ -183,7 +187,9 @@ class DebugLogger:
         response_text: Optional[str] = None
     ):
         """Log API error details to log.txt"""
-        
+        if not config.debug_enabled:
+            return
+
         try:
             self._write_separator()
             self.logger.info(f"🔴 [ERROR] {self._format_timestamp()}")
@@ -216,6 +222,8 @@ class DebugLogger:
     
     def log_info(self, message: str):
         """Log general info message to log.txt"""
+        if not config.debug_enabled:
+            return
         try:
             self.logger.info(f"ℹ️  [{self._format_timestamp()}] {message}")
         except Exception as e:

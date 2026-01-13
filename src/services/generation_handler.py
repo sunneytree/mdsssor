@@ -1607,6 +1607,16 @@ class GenerationHandler:
         if log_id is None:
             return
         try:
+            if status_code == 200 and response_data.get("status") == "success":
+                task_id = response_data.get("task_id")
+                if task_id and "urls" not in response_data:
+                    task = await self.db.get_task(task_id)
+                    if task and task.result_urls:
+                        try:
+                            urls = json.loads(task.result_urls)
+                        except Exception:
+                            urls = [task.result_urls]
+                        response_data = {**response_data, "urls": urls}
             await self.db.update_request_log(
                 log_id,
                 response_body=json.dumps(response_data),

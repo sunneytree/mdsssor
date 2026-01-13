@@ -9,6 +9,8 @@
         @keyframes slide-up{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
         .animate-slide-up{animation:slide-up .3s ease-out}
         .tab-btn{transition:all .2s ease}
+        details > summary{list-style:none}
+        details > summary::-webkit-details-marker{display:none}
     </style>
     <script>
         tailwind.config={theme:{extend:{colors:{border:"hsl(0 0% 89%)",input:"hsl(0 0% 89%)",ring:"hsl(0 0% 3.9%)",background:"hsl(0 0% 100%)",foreground:"hsl(0 0% 3.9%)",primary:{DEFAULT:"hsl(0 0% 9%)",foreground:"hsl(0 0% 98%)"},secondary:{DEFAULT:"hsl(0 0% 96.1%)",foreground:"hsl(0 0% 9%)"},muted:{DEFAULT:"hsl(0 0% 96.1%)",foreground:"hsl(0 0% 45.1%)"},destructive:{DEFAULT:"hsl(0 84.2% 60.2%)",foreground:"hsl(0 0% 98%)"}}}}}
@@ -47,7 +49,6 @@
                 <button onclick="switchTab('settings')" id="tabSettings" class="tab-btn border-b-2 border-transparent text-sm font-medium py-3 px-1">系统配置</button>
                 
                 <button onclick="switchTab('logs')" id="tabLogs" class="tab-btn border-b-2 border-transparent text-sm font-medium py-3 px-1">请求日志</button>
-                <button onclick="switchTab('generate')" id="tabGenerate" class="tab-btn border-b-2 border-transparent text-sm font-medium py-3 px-1">生成面板</button>
             </nav>
         </div>
 
@@ -188,22 +189,14 @@
                     </div>
                 </div>
                 
-                <div class="relative w-full overflow-auto">
-                    <table class="w-full text-sm">
+                <div class="relative w-full">
+                    <table class="w-full text-sm table-fixed">
                         <thead>
                             <tr class="border-b border-border">
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">邮箱</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">状态</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">Client ID</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">过期时间</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">账户类型</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">Sora2</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">可用次数</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">图片</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">视频</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">错误</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">备注</th>
-                                <th class="h-10 px-3 text-right align-middle font-medium text-muted-foreground">操作</th>
+                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground w-[38%]">账号</th>
+                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground w-[27%]">授权 / 时效</th>
+                                <th class="h-10 px-3 text-center align-middle font-medium text-muted-foreground w-[20%]">统计</th>
+                                <th class="h-10 px-3 text-center align-middle font-medium text-muted-foreground w-[15%]">操作</th>
                             </tr>
                         </thead>
                         <tbody id="tokenTableBody" class="divide-y divide-border">
@@ -237,102 +230,106 @@
             <div class="grid gap-6 lg:grid-cols-2">
                 <!-- 安全配置 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">安全配置</h3>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-base font-semibold">安全配置</h3>
+                            <p class="text-xs text-muted-foreground mt-1">管理员账户与密码设置</p>
+                        </div>
+                    </div>
                     <div class="space-y-4">
                         <div>
                             <label class="text-sm font-medium mb-2 block">管理员用户名</label>
                             <input id="cfgAdminUsername" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                            <p class="text-xs text-muted-foreground mt-1">管理员用户名</p>
+                            <p class="text-xs text-muted-foreground mt-1">用于后台登录</p>
                         </div>
-                        <div>
-                            <label class="text-sm font-medium mb-2 block">旧密码</label>
-                            <input id="cfgOldPassword" type="password" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="输入旧密码">
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">旧密码</label>
+                                <input id="cfgOldPassword" type="password" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="输入旧密码">
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">新密码</label>
+                                <input id="cfgNewPassword" type="password" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="输入新密码">
+                            </div>
                         </div>
-                        <div>
-                            <label class="text-sm font-medium mb-2 block">新密码</label>
-                            <input id="cfgNewPassword" type="password" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="输入新密码">
-                        </div>
-                        <button onclick="updateAdminPassword()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full">修改密码</button>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button onclick="updateAdminPassword()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">修改密码</button>
                     </div>
                 </div>
 
                 <!-- API 密钥配置 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">API 密钥配置</h3>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-base font-semibold">API 密钥配置</h3>
+                            <p class="text-xs text-muted-foreground mt-1">客户端调用所需的鉴权密钥</p>
+                        </div>
+                    </div>
                     <div class="space-y-4">
                         <div>
                             <label class="text-sm font-medium mb-2 block">当前 API Key</label>
-                            <input id="cfgCurrentAPIKey" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" readonly disabled>
-                            <p class="text-xs text-muted-foreground mt-1">当前使用的 API Key（只读）</p>
+                            <input id="cfgCurrentAPIKey" type="text" class="flex h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm" readonly disabled>
+                            <p class="text-xs text-muted-foreground mt-1">只读展示</p>
                         </div>
                         <div>
                             <label class="text-sm font-medium mb-2 block">新 API Key</label>
                             <input id="cfgNewAPIKey" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="输入新的 API Key">
-                            <p class="text-xs text-muted-foreground mt-1">用于客户端调用 API 的密钥</p>
+                            <p class="text-xs text-muted-foreground mt-1">更新后需通知客户端替换密钥</p>
                         </div>
-                        <button onclick="updateAPIKey()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full">更新 API Key</button>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button onclick="updateAPIKey()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">更新 API Key</button>
                     </div>
                 </div>
 
                 <!-- 代理配置 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">代理配置</h3>
-                    <div class="space-y-4">
+                    <div class="flex items-start justify-between mb-4">
                         <div>
+                            <h3 class="text-base font-semibold">代理配置</h3>
+                            <p class="text-xs text-muted-foreground mt-1">全局代理与代理池轮询设置</p>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="rounded-md border border-border/60 bg-muted/20 p-3">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="cfgProxyEnabled" class="h-4 w-4 rounded border-input">
                                 <span class="text-sm font-medium">启用代理</span>
                             </label>
+                            <p class="text-xs text-muted-foreground mt-1">开启后请求将走代理</p>
                         </div>
                         <div>
                             <label class="text-sm font-medium mb-2 block">代理地址</label>
                             <input id="cfgProxyUrl" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080">
-                            <p class="text-xs text-muted-foreground mt-1">支持 HTTP 和 SOCKS5 代理</p>
+                            <p class="text-xs text-muted-foreground mt-1">支持 HTTP/SOCKS5</p>
                         </div>
-                        <div>
+                        <div class="rounded-md border border-border/60 bg-muted/20 p-3">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="cfgProxyPoolEnabled" class="h-4 w-4 rounded border-input">
                                 <span class="text-sm font-medium">轮询代理池</span>
                             </label>
-                            <p class="text-xs text-muted-foreground mt-1">启用后将从 data/proxy.txt 文件轮询代理，每行一个代理地址</p>
+                            <p class="text-xs text-muted-foreground mt-1">从 data/proxy.txt 读取代理列表</p>
                             <p id="proxyPoolCount" class="text-xs text-blue-600 mt-1 hidden">当前代理池数量: <span id="proxyPoolCountValue">0</span></p>
                         </div>
-                        <button onclick="saveProxyConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full">保存配置</button>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button onclick="saveProxyConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">保存配置</button>
                     </div>
                 </div>
 
                 <!-- 代理池管理 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">代理池管理</h3>
-                    <div class="space-y-4">
-                        <!-- 格式说明 -->
-                        <div class="p-3 rounded-md bg-blue-50 border border-blue-200">
-                            <p class="text-sm font-medium text-blue-800 mb-2">📋 支持的代理格式：</p>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono text-blue-700">
-                                <div class="p-2 bg-white rounded border border-blue-100">
-                                    <span class="text-blue-500">HTTP:</span> http://user:pass@host:port
-                                </div>
-                                <div class="p-2 bg-white rounded border border-blue-100">
-                                    <span class="text-blue-500">HTTPS:</span> https://user:pass@host:port
-                                </div>
-                                <div class="p-2 bg-white rounded border border-blue-100">
-                                    <span class="text-blue-500">SOCKS5:</span> socks5://user:pass@host:port
-                                </div>
-                                <div class="p-2 bg-white rounded border border-blue-100">
-                                    <span class="text-blue-500">SOCKS5简化:</span> socks5://host:port:user:pass
-                                </div>
-                                <div class="p-2 bg-white rounded border border-blue-100">
-                                    <span class="text-blue-500">ST5简写:</span> st5 host:port:user:pass
-                                </div>
-                                <div class="p-2 bg-white rounded border border-blue-100">
-                                    <span class="text-blue-500">HTTP简化:</span> host:port:user:pass
-                                </div>
-                            </div>
-                            <p class="text-xs text-blue-600 mt-2">💡 示例: st5 38.134.216.107:13611:user:pass 或 socks5://host:port:user:pass</p>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-base font-semibold">代理池管理</h3>
+                            <p class="text-xs text-muted-foreground mt-1">维护 data/proxy.txt 并批量检测可用性</p>
                         </div>
+                    </div>
+                    <div class="space-y-4">
                         <div>
                             <label class="text-sm font-medium mb-2 block">代理列表 (data/proxy.txt)</label>
-                            <textarea id="cfgProxyPool" rows="8" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-y" placeholder="# 每行一个代理地址&#10;http://user:pass@host:port&#10;st5 host:port:user:pass"></textarea>
+                            <textarea id="cfgProxyPool" rows="8" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-y" placeholder="# 每行一个代理地址&#10;http://host:port&#10;socks5://host:port&#10;http://user:pass@host:port&#10;st5 host:port:user:pass"></textarea>
                             <p class="text-xs text-muted-foreground mt-1">每行一个代理，以 # 开头的行为注释，检测目标: sora.chatgpt.com</p>
                         </div>
                         <div class="flex gap-2">
@@ -345,63 +342,74 @@
                             <button onclick="saveProxyPool()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 flex-1">保存代理池</button>
                         </div>
                         <div class="flex gap-2 pt-2 border-t border-border">
-                            <button onclick="testAllProxies(false)" class="inline-flex items-center justify-center rounded-md bg-blue-600 text-white hover:bg-blue-700 h-9 px-4 flex-1">
+                            <button onclick="testAllProxies(false)" class="inline-flex items-center justify-center rounded-md bg-emerald-600 text-white hover:bg-emerald-700 h-9 px-4 flex-1">
                                 <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                                     <polyline points="22 4 12 14.01 9 11.01"/>
                                 </svg>
                                 检测全部代理
                             </button>
-                            <button onclick="testAllProxies(true)" class="inline-flex items-center justify-center rounded-md bg-orange-600 text-white hover:bg-orange-700 h-9 px-4 flex-1">
+                            <button onclick="testAllProxies(true)" class="inline-flex items-center justify-center rounded-md bg-amber-600 text-white hover:bg-amber-700 h-9 px-4 flex-1">
                                 <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                                 </svg>
                                 检测并剔除无效
                             </button>
                         </div>
-                        <!-- 代理检测结果 -->
                         <div id="proxyTestResults" class="hidden space-y-3 pt-3 border-t border-border">
                             <div class="grid grid-cols-4 gap-2 text-center">
-                                <div class="p-2 rounded bg-muted">
+                                <div class="p-2 rounded-md border border-border/60 bg-muted/20">
                                     <p class="text-xs text-muted-foreground">总数</p>
-                                    <p class="text-lg font-bold" id="proxyTestTotal">0</p>
+                                    <p class="text-lg font-semibold" id="proxyTestTotal">0</p>
                                 </div>
-                                <div class="p-2 rounded bg-green-50">
-                                    <p class="text-xs text-green-600">有效</p>
-                                    <p class="text-lg font-bold text-green-600" id="proxyTestValid">0</p>
+                                <div class="p-2 rounded-md border border-emerald-200 bg-emerald-50">
+                                    <p class="text-xs text-emerald-700">有效</p>
+                                    <p class="text-lg font-semibold text-emerald-700" id="proxyTestValid">0</p>
                                 </div>
-                                <div class="p-2 rounded bg-red-50">
-                                    <p class="text-xs text-red-600">无效</p>
-                                    <p class="text-lg font-bold text-red-600" id="proxyTestInvalid">0</p>
+                                <div class="p-2 rounded-md border border-rose-200 bg-rose-50">
+                                    <p class="text-xs text-rose-600">无效</p>
+                                    <p class="text-lg font-semibold text-rose-600" id="proxyTestInvalid">0</p>
                                 </div>
-                                <div class="p-2 rounded bg-orange-50">
-                                    <p class="text-xs text-orange-600">已剔除</p>
-                                    <p class="text-lg font-bold text-orange-600" id="proxyTestRemoved">0</p>
+                                <div class="p-2 rounded-md border border-amber-200 bg-amber-50">
+                                    <p class="text-xs text-amber-700">已剔除</p>
+                                    <p class="text-lg font-semibold text-amber-700" id="proxyTestRemoved">0</p>
                                 </div>
                             </div>
-                            <div id="proxyTestList" class="max-h-40 overflow-y-auto space-y-1 text-xs"></div>
+                            <div id="proxyTestList" class="max-h-40 overflow-y-auto space-y-1 rounded-md border border-border/60 bg-muted/10 p-2 text-xs"></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 错误处理配置 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">错误处理配置</h3>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-base font-semibold">错误处理配置</h3>
+                            <p class="text-xs text-muted-foreground mt-1">控制 Token 自动禁用的阈值策略</p>
+                        </div>
+                    </div>
                     <div class="space-y-4">
                         <div>
                             <label class="text-sm font-medium mb-2 block">错误封禁阈值</label>
                             <input id="cfgErrorBan" type="number" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="3">
                             <p class="text-xs text-muted-foreground mt-1">Token 连续错误达到此次数后自动禁用</p>
                         </div>
-                        <button onclick="saveAdminConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full">保存配置</button>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button onclick="saveAdminConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">保存配置</button>
                     </div>
                 </div>
 
                 <!-- 缓存配置 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">缓存配置</h3>
-                    <div class="space-y-4">
+                    <div class="flex items-start justify-between mb-4">
                         <div>
+                            <h3 class="text-base font-semibold">缓存配置</h3>
+                            <p class="text-xs text-muted-foreground mt-1">控制缓存开关与访问域名</p>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="rounded-md border border-border/60 bg-muted/20 p-3">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="cfgCacheEnabled" class="h-4 w-4 rounded border-input" onchange="toggleCacheOptions()">
                                 <span class="text-sm font-medium">启用缓存</span>
@@ -410,100 +418,125 @@
                         </div>
 
                         <!-- 缓存配置选项 -->
-                        <div id="cacheOptions" style="display: none;" class="space-y-4 pt-4 border-t border-border">
-                            <div>
-                                <label class="text-sm font-medium mb-2 block">缓存超时时间（秒）</label>
-                                <input id="cfgCacheTimeout" type="number" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="7200" min="60" max="86400">
-                                <p class="text-xs text-muted-foreground mt-1">文件缓存超时时间，范围：60-86400 秒（1分钟-24小时）</p>
-                            </div>
-                            <div>
-                                <label class="text-sm font-medium mb-2 block">缓存文件访问域名</label>
-                                <input id="cfgCacheBaseUrl" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="https://yourdomain.com">
-                                <p class="text-xs text-muted-foreground mt-1">留空则使用服务器地址，例如：https://yourdomain.com</p>
-                            </div>
-                            <div id="cacheEffectiveUrl" class="rounded-md bg-muted p-3 hidden">
-                                <p class="text-xs text-muted-foreground">
-                                    <strong>🌐 当前生效的访问地址：</strong><code id="cacheEffectiveUrlValue" class="bg-background px-1 py-0.5 rounded"></code>
-                                </p>
+                        <div id="cacheOptions" style="display: none;" class="space-y-4">
+                            <div class="rounded-md border border-border/60 bg-muted/20 p-3 space-y-4">
+                                <div>
+                                    <label class="text-sm font-medium mb-2 block">缓存超时时间（秒）</label>
+                                    <input id="cfgCacheTimeout" type="number" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="7200" min="60" max="86400">
+                                    <p class="text-xs text-muted-foreground mt-1">文件缓存超时时间，范围：60-86400 秒（1分钟-24小时）</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium mb-2 block">缓存文件访问域名</label>
+                                    <input id="cfgCacheBaseUrl" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="https://yourdomain.com">
+                                    <p class="text-xs text-muted-foreground mt-1">留空则使用服务器地址，例如：https://yourdomain.com</p>
+                                </div>
+                                <div id="cacheEffectiveUrl" class="rounded-md border border-border/60 bg-background p-2 hidden">
+                                    <p class="text-xs text-muted-foreground">
+                                        <strong>当前生效的访问地址：</strong><code id="cacheEffectiveUrlValue" class="bg-muted px-1 py-0.5 rounded"></code>
+                                    </p>
+                                </div>
                             </div>
                         </div>
-
-                        <button onclick="saveCacheConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full">保存配置</button>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button onclick="saveCacheConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">保存配置</button>
                     </div>
                 </div>
 
                 <!-- 生成超时配置 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">生成超时配置</h3>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-base font-semibold">生成超时配置</h3>
+                            <p class="text-xs text-muted-foreground mt-1">设置图片与视频的超时阈值</p>
+                        </div>
+                    </div>
                     <div class="space-y-4">
-                        <div>
-                            <label class="text-sm font-medium mb-2 block">图片生成超时时间（秒）</label>
-                            <input id="cfgImageTimeout" type="number" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="300" min="60" max="3600">
-                            <p class="text-xs text-muted-foreground mt-1">图片生成超时时间，范围：60-3600 秒（1分钟-1小时），超时后自动释放Token锁</p>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">图片生成超时时间（秒）</label>
+                                <input id="cfgImageTimeout" type="number" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="300" min="60" max="3600">
+                                <p class="text-xs text-muted-foreground mt-1">范围：60-3600 秒（1分钟-1小时），超时后自动释放 Token 锁</p>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">视频生成超时时间（秒）</label>
+                                <input id="cfgVideoTimeout" type="number" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="1500" min="60" max="7200">
+                                <p class="text-xs text-muted-foreground mt-1">范围：60-7200 秒（1分钟-2小时），超时后返回上游 API 超时错误</p>
+                            </div>
                         </div>
-                        <div>
-                            <label class="text-sm font-medium mb-2 block">视频生成超时时间（秒）</label>
-                            <input id="cfgVideoTimeout" type="number" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="1500" min="60" max="7200">
-                            <p class="text-xs text-muted-foreground mt-1">视频生成超时时间，范围：60-7200 秒（1分钟-2小时），超时后返回上游API超时错误</p>
-                        </div>
-                        <button onclick="saveGenerationTimeout()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full">保存配置</button>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button onclick="saveGenerationTimeout()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">保存配置</button>
                     </div>
                 </div>
 
                 <!-- 无水印模式配置 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">无水印模式配置</h3>
-                    <div class="space-y-4">
+                    <div class="flex items-start justify-between mb-4">
                         <div>
+                            <h3 class="text-base font-semibold">无水印模式配置</h3>
+                            <p class="text-xs text-muted-foreground mt-1">控制发布后解析与清理流程</p>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="rounded-md border border-border/60 bg-muted/20 p-3">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="cfgWatermarkFreeEnabled" class="h-4 w-4 rounded border-input" onchange="toggleWatermarkFreeOptions()">
                                 <span class="text-sm font-medium">开启无水印模式</span>
                             </label>
-                            <p class="text-xs text-muted-foreground mt-2">开启后生成的视频将会被发布到sora平台并且提取返回无水印的视频，在缓存到本地后会自动删除发布的视频</p>
+                            <p class="text-xs text-muted-foreground mt-2">开启后生成的视频将会被发布到 sora 平台并提取无水印视频，缓存到本地后自动删除发布的视频</p>
                         </div>
 
                         <!-- 解析方式选择 -->
-                        <div id="watermarkFreeOptions" style="display: none;" class="space-y-4 pt-4 border-t border-border">
-                            <div>
-                                <label class="text-sm font-medium">解析方式</label>
-                                <select id="cfgParseMethod" class="w-full mt-2 px-3 py-2 border border-input rounded-md bg-background text-foreground" onchange="toggleCustomParseOptions()">
-                                    <option value="third_party">第三方解析</option>
-                                    <option value="custom">自定义解析接口</option>
-                                </select>
-                            </div>
-
-                            <!-- 自定义解析配置 -->
-                            <div id="customParseOptions" style="display: none;" class="space-y-4">
+                        <div id="watermarkFreeOptions" style="display: none;" class="space-y-4">
+                            <div class="rounded-md border border-border/60 bg-muted/20 p-3 space-y-4">
                                 <div>
-                                    <label class="text-sm font-medium">解析服务器地址</label>
-                                    <input type="text" id="cfgCustomParseUrl" placeholder="请输入解析服务器地址 (例如: http://example.com)" class="w-full mt-2 px-3 py-2 border border-input rounded-md bg-background text-foreground">
-                                    <p class="text-xs text-muted-foreground mt-1"><a href="https://github.com/tibbar213/sora-downloader" target="_blank" class="text-blue-600 hover:text-blue-800 underline">部署自定义解析服务器</a></p>
+                                    <label class="text-sm font-medium">解析方式</label>
+                                    <select id="cfgParseMethod" class="w-full mt-2 px-3 py-2 border border-input rounded-md bg-background text-foreground" onchange="toggleCustomParseOptions()">
+                                        <option value="third_party">第三方解析</option>
+                                        <option value="custom">自定义解析接口</option>
+                                    </select>
                                 </div>
-                                <div>
-                                    <label class="text-sm font-medium">访问密钥</label>
-                                    <input type="password" id="cfgCustomParseToken" placeholder="请输入访问密钥" class="w-full mt-2 px-3 py-2 border border-input rounded-md bg-background text-foreground">
+
+                                <!-- 自定义解析配置 -->
+                                <div id="customParseOptions" style="display: none;" class="space-y-4">
+                                    <div>
+                                        <label class="text-sm font-medium">解析服务器地址</label>
+                                        <input type="text" id="cfgCustomParseUrl" placeholder="请输入解析服务器地址 (例如: http://example.com)" class="w-full mt-2 px-3 py-2 border border-input rounded-md bg-background text-foreground">
+                                        <p class="text-xs text-muted-foreground mt-1"><a href="https://github.com/tibbar213/sora-downloader" target="_blank" class="text-blue-600 hover:text-blue-800 underline">部署自定义解析服务器</a></p>
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-medium">访问密钥</label>
+                                        <input type="password" id="cfgCustomParseToken" placeholder="请输入访问密钥" class="w-full mt-2 px-3 py-2 border border-input rounded-md bg-background text-foreground">
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        <button onclick="saveWatermarkFreeConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full">保存配置</button>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button onclick="saveWatermarkFreeConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">保存配置</button>
                     </div>
                 </div>
 
                 <!-- 调试配置 -->
                 <div class="rounded-lg border border-border bg-background p-6">
-                    <h3 class="text-lg font-semibold mb-4">调试配置</h3>
-                    <div class="space-y-4">
+                    <div class="flex items-start justify-between mb-4">
                         <div>
+                            <h3 class="text-base font-semibold">调试配置</h3>
+                            <p class="text-xs text-muted-foreground mt-1">控制详细日志与调试输出</p>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="rounded-md border border-border/60 bg-muted/20 p-3">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="cfgDebugEnabled" class="h-4 w-4 rounded border-input" onchange="toggleDebugMode()">
                                 <span class="text-sm font-medium">启用调试模式</span>
                             </label>
-                            <p class="text-xs text-muted-foreground mt-2">开启后，详细的上游API请求和响应日志将写入 <code class="bg-muted px-1 py-0.5 rounded">logs.txt</code> 文件，重启生效</p>
+                            <p class="text-xs text-muted-foreground mt-2">开启后，详细的上游 API 请求和响应日志将写入 <code class="bg-muted px-1 py-0.5 rounded">logs.txt</code> 文件，重启生效</p>
                         </div>
-                        <div class="rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-3 border border-yellow-200 dark:border-yellow-800">
-                            <p class="text-xs text-yellow-800 dark:text-yellow-200">
-                                ⚠️ <strong>注意：</strong>调试模式会产生非常非常大量的日志，仅限Debug时候开启，否则磁盘boom
+                        <div class="rounded-md border border-amber-200 bg-amber-50 p-3">
+                            <p class="text-xs text-amber-900">
+                                <strong>注意：</strong>调试模式会产生大量日志，仅限 Debug 时开启
                             </p>
                         </div>
                     </div>
@@ -515,23 +548,27 @@
         <div id="panelLogs" class="hidden">
             <div class="rounded-lg border border-border bg-background">
                 <div class="flex items-center justify-between gap-4 p-4 border-b border-border">
-                    <h3 class="text-lg font-semibold">请求日志</h3>
+                    <div>
+                        <h3 class="text-lg font-semibold">请求日志</h3>
+                        <p class="text-xs text-muted-foreground mt-1">最近 100 条请求，展示任务状态与进度</p>
+                    </div>
                     <button onclick="refreshLogs()" class="inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent h-8 w-8" title="刷新">
                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                         </svg>
                     </button>
                 </div>
-                <div class="relative w-full overflow-auto max-h-[600px]">
+                <div class="relative w-full overflow-auto max-h-[620px]">
                     <table class="w-full text-sm">
-                        <thead class="sticky top-0 bg-background">
+                        <thead class="sticky top-0 bg-background/95 backdrop-blur">
                             <tr class="border-b border-border">
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">操作</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">Token邮箱</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">状态码</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">耗时(秒)</th>
+                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">操作 / 任务</th>
+                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">Token</th>
+                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">状态</th>
+                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">进度</th>
+                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">耗时</th>
                                 <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">时间</th>
-                                <th class="h-10 px-3 text-left align-middle font-medium text-muted-foreground">详情</th>
+                                <th class="h-10 px-3 text-right align-middle font-medium text-muted-foreground">详情</th>
                             </tr>
                         </thead>
                         <tbody id="logsTableBody" class="divide-y divide-border">
@@ -540,11 +577,6 @@
                     </table>
                 </div>
             </div>
-        </div>
-
-        <!-- 生成面板（使用 iframe 嵌入 generate.html） -->
-        <div id="panelGenerate" class="hidden" style="background: #ffffff;">
-            <iframe id="generateFrame" src="/static/generate.html" class="w-full" style="border: 0; background: #ffffff; display:block; width:100%; height: 800px;" loading="lazy"></iframe>
         </div>
 
         <!-- 页脚 -->
@@ -581,73 +613,66 @@
                     </svg>
                 </button>
             </div>
-            <div class="p-5 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
-                <!-- Access Token -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Access Token (AT) <span class="text-red-500">*</span></label>
-                    <textarea id="addTokenAT" rows="3" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="请输入 Access Token 或使用下方 ST/RT 转换"></textarea>
-                    <p class="text-xs text-muted-foreground">格式: eyJh... (JWT格式)</p>
-                </div>
-
-                <!-- Session Token -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Session Token (ST) <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <div class="flex gap-2">
-                        <textarea id="addTokenST" rows="2" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="输入 Session Token 后点击转换"></textarea>
-                        <button onclick="convertST2AT()" class="inline-flex items-center justify-center rounded-md bg-blue-600 text-white hover:bg-blue-700 px-4 whitespace-nowrap h-auto">
-                            ST→AT
-                        </button>
-                    </div>
-                    <p class="text-xs text-muted-foreground">从浏览器 Cookie 中获取 __Secure-next-auth.session-token</p>
-                </div>
-
-                <!-- Refresh Token -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Refresh Token (RT) <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <div class="flex gap-2">
-                        <textarea id="addTokenRT" rows="2" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="输入 Refresh Token 后点击转换"></textarea>
-                        <button onclick="convertRT2AT()" class="inline-flex items-center justify-center rounded-md bg-green-600 text-white hover:bg-green-700 px-4 whitespace-nowrap h-auto">
-                            RT→AT
-                        </button>
-                    </div>
-                    <p class="text-xs text-muted-foreground">从移动端或其他客户端获取</p>
-                    <p id="addRTRefreshHint" class="text-xs text-green-600 font-medium hidden">✓ RT已被刷新，已填入更新后的RT</p>
-                </div>
-
-                <!-- Client ID -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Client ID <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <input id="addTokenClientId" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="留空使用默认值">
-                    <p class="text-xs text-muted-foreground">用于 RT 刷新，留空使用默认 Client ID</p>
-                </div>
-
-                <!-- Proxy URL -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">代理 <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <input id="addTokenProxyUrl" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080">
-                    <p class="text-xs text-muted-foreground">支持 http 和 socks5 代理，留空使用系统设置的代理</p>
-                </div>
-
-                <!-- Remark -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">备注 <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <input id="addTokenRemark" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="添加备注信息">
-                </div>
-
-                <!-- 功能开关 -->
-                <div class="space-y-3 pt-2 border-t border-border">
-                    <label class="text-sm font-medium">功能开关</label>
+            <div class="p-5 space-y-5 max-h-[calc(100vh-200px)] overflow-y-auto">
+                <div class="rounded-md border border-border/60 bg-background p-4 space-y-4">
+                    <p class="text-sm font-semibold">认证凭据</p>
                     <div class="space-y-2">
-                        <div class="flex items-center gap-3">
+                        <label class="text-sm font-medium">Access Token (AT) <span class="text-red-500">*</span></label>
+                        <textarea id="addTokenAT" rows="3" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="请输入 Access Token 或使用下方 ST/RT 转换"></textarea>
+                        <p class="text-xs text-muted-foreground">格式: eyJh... (JWT格式)</p>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Session Token (ST) <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <div class="flex gap-2">
+                                <textarea id="addTokenST" rows="2" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="输入 Session Token 后点击转换"></textarea>
+                                <button onclick="convertST2AT()" class="inline-flex items-center justify-center rounded-md bg-blue-600 text-white hover:bg-blue-700 px-4 whitespace-nowrap h-9">ST→AT</button>
+                            </div>
+                            <p class="text-xs text-muted-foreground">从浏览器 Cookie 中获取 __Secure-next-auth.session-token</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Refresh Token (RT) <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <div class="flex gap-2">
+                                <textarea id="addTokenRT" rows="2" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="输入 Refresh Token 后点击转换"></textarea>
+                                <button onclick="convertRT2AT()" class="inline-flex items-center justify-center rounded-md bg-green-600 text-white hover:bg-green-700 px-4 whitespace-nowrap h-9">RT→AT</button>
+                            </div>
+                            <p class="text-xs text-muted-foreground">从移动端或其他客户端获取</p>
+                            <p id="addRTRefreshHint" class="text-xs text-green-600 font-medium hidden">✓ RT已被刷新，已填入更新后的RT</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-md border border-border/60 bg-background p-4 space-y-4">
+                    <p class="text-sm font-semibold">可选配置</p>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Client ID <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <input id="addTokenClientId" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="留空使用默认值">
+                            <p class="text-xs text-muted-foreground">用于 RT 刷新，留空使用默认 Client ID</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">代理 <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <input id="addTokenProxyUrl" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080">
+                            <p class="text-xs text-muted-foreground">支持 http 和 socks5 代理，留空使用系统设置的代理</p>
+                        </div>
+                        <div class="space-y-2 sm:col-span-2">
+                            <label class="text-sm font-medium">备注 <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <input id="addTokenRemark" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="添加备注信息">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-md border border-border/60 bg-background p-4 space-y-3">
+                    <p class="text-sm font-semibold">功能开关</p>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="flex items-center justify-between gap-3 rounded-md border border-border/60 bg-background px-3 py-2">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="addTokenImageEnabled" checked class="h-4 w-4 rounded border-input">
                                 <span class="text-sm font-medium">启用图片生成</span>
                             </label>
                             <input type="number" id="addTokenImageConcurrency" value="-1" class="flex h-8 w-20 rounded-md border border-input bg-background px-2 py-1 text-sm" placeholder="并发数" title="并发数量限制：设置同时处理的最大请求数。-1表示不限制">
                         </div>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center justify-between gap-3 rounded-md border border-border/60 bg-background px-3 py-2">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="addTokenVideoEnabled" checked class="h-4 w-4 rounded border-input">
                                 <span class="text-sm font-medium">启用视频生成</span>
@@ -655,6 +680,7 @@
                             <input type="number" id="addTokenVideoConcurrency" value="-1" class="flex h-8 w-20 rounded-md border border-input bg-background px-2 py-1 text-sm" placeholder="并发数" title="并发数量限制：设置同时处理的最大请求数。-1表示不限制">
                         </div>
                     </div>
+                    <p class="text-xs text-muted-foreground">并发数：-1 表示不限制</p>
                 </div>
             </div>
             <div class="flex items-center justify-end gap-3 p-5 border-t border-border sticky bottom-0 bg-background">
@@ -682,75 +708,85 @@
                     </svg>
                 </button>
             </div>
-            <div class="p-5 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div class="p-5 space-y-5 max-h-[calc(100vh-200px)] overflow-y-auto">
                 <input type="hidden" id="editTokenId">
 
-                <!-- Access Token -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Access Token (AT) <span class="text-red-500">*</span></label>
-                    <textarea id="editTokenAT" rows="3" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="请输入 Access Token 或使用下方 ST/RT 转换"></textarea>
-                    <p class="text-xs text-muted-foreground">格式: eyJh... (JWT格式)</p>
-                </div>
-
-                <!-- Session Token -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Session Token (ST) <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <div class="flex gap-2">
-                        <textarea id="editTokenST" rows="2" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="输入 Session Token 后点击转换"></textarea>
-                        <button onclick="convertEditST2AT()" class="inline-flex items-center justify-center rounded-md bg-blue-600 text-white hover:bg-blue-700 px-4 whitespace-nowrap h-auto">
-                            ST→AT
-                        </button>
+                <div class="rounded-md border border-border/60 bg-muted/30 p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-semibold">基础信息</p>
+                        <span class="text-xs text-muted-foreground">只读</span>
                     </div>
-                    <p class="text-xs text-muted-foreground">从浏览器 Cookie 中获取 __Secure-next-auth.session-token</p>
-                </div>
-
-                <!-- Refresh Token -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Refresh Token (RT) <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <div class="flex gap-2">
-                        <textarea id="editTokenRT" rows="2" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="输入 Refresh Token 后点击转换"></textarea>
-                        <button onclick="convertEditRT2AT()" class="inline-flex items-center justify-center rounded-md bg-green-600 text-white hover:bg-green-700 px-4 whitespace-nowrap h-auto">
-                            RT→AT
-                        </button>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="text-sm font-medium mb-2 block">Token ID</label>
+                            <input id="editTokenIdDisplay" class="flex h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-xs font-mono" readonly>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium mb-2 block">邮箱</label>
+                            <input id="editTokenEmail" class="flex h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm" readonly>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="text-sm font-medium mb-2 block">备注 <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <input id="editTokenRemark" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="添加备注信息">
+                        </div>
                     </div>
-                    <p class="text-xs text-muted-foreground">从移动端或其他客户端获取</p>
-                    <p id="editRTRefreshHint" class="text-xs text-green-600 font-medium hidden">✓ RT已被刷新，已填入更新后的RT</p>
                 </div>
 
-                <!-- Client ID -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Client ID <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <input id="editTokenClientId" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="留空使用默认值">
-                    <p class="text-xs text-muted-foreground">用于 RT 刷新，留空使用默认 Client ID</p>
-                </div>
-
-                <!-- Proxy URL -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">代理 <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <input id="editTokenProxyUrl" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080">
-                    <p class="text-xs text-muted-foreground">支持 http 和 socks5 代理，留空使用系统设置的代理</p>
-                </div>
-
-                <!-- Remark -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">备注 <span class="text-muted-foreground text-xs">- 可选</span></label>
-                    <input id="editTokenRemark" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="添加备注信息">
-                </div>
-
-                <!-- 功能开关 -->
-                <div class="space-y-3 pt-2 border-t border-border">
-                    <label class="text-sm font-medium">功能开关</label>
+                <div class="rounded-md border border-border/60 bg-background p-4 space-y-4">
+                    <p class="text-sm font-semibold">认证凭据</p>
                     <div class="space-y-2">
-                        <div class="flex items-center gap-3">
+                        <label class="text-sm font-medium">Access Token (AT) <span class="text-red-500">*</span></label>
+                        <textarea id="editTokenAT" rows="3" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="请输入 Access Token 或使用下方 ST/RT 转换"></textarea>
+                        <p class="text-xs text-muted-foreground">格式: eyJh... (JWT格式)</p>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Session Token (ST) <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <div class="flex gap-2">
+                                <textarea id="editTokenST" rows="2" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="输入 Session Token 后点击转换"></textarea>
+                                <button onclick="convertEditST2AT()" class="inline-flex items-center justify-center rounded-md bg-blue-600 text-white hover:bg-blue-700 px-4 whitespace-nowrap h-9">ST→AT</button>
+                            </div>
+                            <p class="text-xs text-muted-foreground">从浏览器 Cookie 中获取 __Secure-next-auth.session-token</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Refresh Token (RT) <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <div class="flex gap-2">
+                                <textarea id="editTokenRT" rows="2" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-none" placeholder="输入 Refresh Token 后点击转换"></textarea>
+                                <button onclick="convertEditRT2AT()" class="inline-flex items-center justify-center rounded-md bg-green-600 text-white hover:bg-green-700 px-4 whitespace-nowrap h-9">RT→AT</button>
+                            </div>
+                            <p class="text-xs text-muted-foreground">从移动端或其他客户端获取</p>
+                            <p id="editRTRefreshHint" class="text-xs text-green-600 font-medium hidden">✓ RT已被刷新，已填入更新后的RT</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-md border border-border/60 bg-background p-4 space-y-4">
+                    <p class="text-sm font-semibold">可选配置</p>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Client ID <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <input id="editTokenClientId" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="留空使用默认值">
+                            <p class="text-xs text-muted-foreground">用于 RT 刷新，留空使用默认 Client ID</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">代理 <span class="text-muted-foreground text-xs">- 可选</span></label>
+                            <input id="editTokenProxyUrl" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono" placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080">
+                            <p class="text-xs text-muted-foreground">支持 http 和 socks5 代理，留空使用系统设置的代理</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-md border border-border/60 bg-background p-4 space-y-3">
+                    <p class="text-sm font-semibold">功能开关</p>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="flex items-center justify-between gap-3 rounded-md border border-border/60 bg-background px-3 py-2">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="editTokenImageEnabled" class="h-4 w-4 rounded border-input">
                                 <span class="text-sm font-medium">启用图片生成</span>
                             </label>
                             <input type="number" id="editTokenImageConcurrency" class="flex h-8 w-20 rounded-md border border-input bg-background px-2 py-1 text-sm" placeholder="并发数" title="并发数量限制：设置同时处理的最大请求数。-1表示不限制">
                         </div>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center justify-between gap-3 rounded-md border border-border/60 bg-background px-3 py-2">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="editTokenVideoEnabled" class="h-4 w-4 rounded border-input">
                                 <span class="text-sm font-medium">启用视频生成</span>
@@ -758,6 +794,7 @@
                             <input type="number" id="editTokenVideoConcurrency" class="flex h-8 w-20 rounded-md border border-input bg-background px-2 py-1 text-sm" placeholder="并发数" title="并发数量限制：设置同时处理的最大请求数。-1表示不限制">
                         </div>
                     </div>
+                    <p class="text-xs text-muted-foreground">并发数：-1 表示不限制</p>
                 </div>
             </div>
             <div class="flex items-center justify-end gap-3 p-5 border-t border-border sticky bottom-0 bg-background">
@@ -970,16 +1007,16 @@
         updatePagination=()=>{const total=filteredTokens.length;const totalPages=Math.max(1,Math.ceil(total/pageSize));const start=total===0?0:(currentPage-1)*pageSize+1;const end=Math.min(currentPage*pageSize,total);$('pageStart').textContent=start;$('pageEnd').textContent=end;$('totalTokens').textContent=total;$('currentPage').textContent=currentPage;$('totalPages').textContent=totalPages;$('prevPageBtn').disabled=currentPage<=1;$('nextPageBtn').disabled=currentPage>=totalPages},
         formatExpiry=exp=>{if(!exp)return'-';const d=new Date(exp),now=new Date(),diff=d-now;const dateStr=d.toLocaleDateString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'-');const timeStr=d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false});if(diff<0)return`<span class="text-red-600">${dateStr} ${timeStr}</span>`;const days=Math.floor(diff/864e5);if(days<7)return`<span class="text-orange-600">${dateStr} ${timeStr}</span>`;return`${dateStr} ${timeStr}`},
         formatPlanType=type=>{if(!type)return'-';const typeMap={'chatgpt_team':'Team','chatgpt_plus':'Plus','chatgpt_pro':'Pro','chatgpt_free':'Free'};return typeMap[type]||type},
-        formatSora2=(t)=>{if(t.sora2_supported===true){const remaining=t.sora2_total_count-t.sora2_redeemed_count;const tooltipText=`邀请码: ${t.sora2_invite_code||'无'}\n可用次数: ${remaining}/${t.sora2_total_count}\n已用次数: ${t.sora2_redeemed_count}`;return`<div class="inline-flex items-center gap-1"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs bg-green-50 text-green-700 cursor-pointer" title="${tooltipText}" onclick="copySora2Code('${t.sora2_invite_code||''}')">支持</span><span class="text-xs text-muted-foreground" title="${tooltipText}">${remaining}/${t.sora2_total_count}</span></div>`}else if(t.sora2_supported===false){return`<span class="inline-flex items-center rounded px-2 py-0.5 text-xs bg-gray-100 text-gray-700 cursor-pointer" title="点击使用邀请码激活" onclick="openSora2Modal(${t.id})">不支持</span>`}else{return'-'}},
-        formatPlanTypeWithTooltip=(t)=>{const tooltipText=t.subscription_end?`套餐到期: ${new Date(t.subscription_end).toLocaleDateString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'-')} ${new Date(t.subscription_end).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false})}`:'';return`<span class="inline-flex items-center rounded px-2 py-0.5 text-xs bg-blue-50 text-blue-700 cursor-pointer" title="${tooltipText||t.plan_title||'-'}">${formatPlanType(t.plan_type)}</span>`},
-        formatSora2Remaining=(t)=>{if(t.sora2_supported===true){const remaining=t.sora2_remaining_count||0;return`<span class="text-xs">${remaining}</span>`}else{return'-'}},
-        formatClientId=(clientId)=>{if(!clientId)return'-';const short=clientId.substring(0,8)+'...';return`<span class="text-xs font-mono cursor-pointer hover:text-primary" title="${clientId}" onclick="navigator.clipboard.writeText('${clientId}').then(()=>showToast('已复制','success'))">${short}</span>`},
-        renderTokens=()=>{const tb=$('tokenTableBody');const start=(currentPage-1)*pageSize;const end=start+pageSize;const pageTokens=filteredTokens.slice(start,end);tb.innerHTML=pageTokens.map(t=>{const imageDisplay=t.image_enabled?`${t.image_count||0}`:'-';const videoDisplay=(t.video_enabled&&t.sora2_supported)?`${t.video_count||0}`:'-';return`<tr><td class="py-2.5 px-3">${t.email}</td><td class="py-2.5 px-3"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs ${t.is_active?'bg-green-50 text-green-700':'bg-gray-100 text-gray-700'}">${t.is_active?'活跃':'禁用'}</span></td><td class="py-2.5 px-3">${formatClientId(t.client_id)}</td><td class="py-2.5 px-3 text-xs">${formatExpiry(t.expiry_time)}</td><td class="py-2.5 px-3 text-xs">${formatPlanTypeWithTooltip(t)}</td><td class="py-2.5 px-3 text-xs">${formatSora2(t)}</td><td class="py-2.5 px-3">${formatSora2Remaining(t)}</td><td class="py-2.5 px-3">${imageDisplay}</td><td class="py-2.5 px-3">${videoDisplay}</td><td class="py-2.5 px-3">${t.error_count||0}</td><td class="py-2.5 px-3 text-xs text-muted-foreground">${t.remark||'-'}</td><td class="py-2.5 px-3 text-right"><button onclick="testToken(${t.id})" class="inline-flex items-center justify-center rounded-md hover:bg-blue-50 hover:text-blue-700 h-7 px-2 text-xs mr-1">测试</button><button onclick="activateUsername(${t.id})" class="inline-flex items-center justify-center rounded-md hover:bg-purple-50 hover:text-purple-700 h-7 px-2 text-xs mr-1" title="为该Token激活用户名">激活用户名</button><button onclick="openEditModal(${t.id})" class="inline-flex items-center justify-center rounded-md hover:bg-green-50 hover:text-green-700 h-7 px-2 text-xs mr-1">编辑</button><button onclick="toggleToken(${t.id},${t.is_active})" class="inline-flex items-center justify-center rounded-md hover:bg-accent h-7 px-2 text-xs mr-1">${t.is_active?'禁用':'启用'}</button><button onclick="deleteToken(${t.id})" class="inline-flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive h-7 px-2 text-xs">删除</button></td></tr>`}).join('');updatePagination()},
+        formatSora2=(t)=>{if(t.sora2_supported===true){const remaining=t.sora2_total_count-t.sora2_redeemed_count;const tooltipText=`邀请码: ${t.sora2_invite_code||'无'}\n可用次数: ${remaining}/${t.sora2_total_count}\n已用次数: ${t.sora2_redeemed_count}`;return`<div class="inline-flex items-center gap-1 whitespace-nowrap"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs bg-green-50 text-green-700 cursor-pointer whitespace-nowrap" title="${tooltipText}" onclick="copySora2Code('${t.sora2_invite_code||''}')">支持</span><span class="text-xs text-muted-foreground whitespace-nowrap" title="${tooltipText}">${remaining}/${t.sora2_total_count}</span></div>`}else if(t.sora2_supported===false){return`<span class="inline-flex items-center rounded px-2 py-0.5 text-xs bg-gray-100 text-gray-700 cursor-pointer whitespace-nowrap" title="点击使用邀请码激活" onclick="openSora2Modal(${t.id})">不支持</span>`}else{return'-'}},
+        formatPlanTypeWithTooltip=(t)=>{const tooltipText=t.subscription_end?`套餐到期: ${new Date(t.subscription_end).toLocaleDateString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'-')} ${new Date(t.subscription_end).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false})}`:'';return`<span class="inline-flex items-center rounded px-2 py-0.5 text-xs bg-blue-50 text-blue-700 cursor-pointer whitespace-nowrap" title="${tooltipText||t.plan_title||'-'}">${formatPlanType(t.plan_type)}</span>`},
+        formatSora2Remaining=(t)=>{if(t.sora2_supported===true){const remaining=t.sora2_remaining_count||0;return`<span class="text-xs whitespace-nowrap">${remaining}</span>`}else{return'-'}},
+        formatClientId=(clientId)=>{if(!clientId)return'-';const short=clientId.substring(0,8)+'...';return`<span class="text-xs font-mono cursor-pointer hover:text-primary whitespace-nowrap" title="${clientId}" onclick="navigator.clipboard.writeText('${clientId}').then(()=>showToast('已复制','success'))">${short}</span>`},
+        renderTokens=()=>{const tb=$('tokenTableBody');const start=(currentPage-1)*pageSize;const end=start+pageSize;const pageTokens=filteredTokens.slice(start,end);tb.innerHTML=pageTokens.map(t=>{const imageDisplay=t.image_enabled?`${t.image_count||0}`:'-';const videoDisplay=(t.video_enabled&&t.sora2_supported)?`${t.video_count||0}`:'-';const email=t.email||'-';const remark=t.remark||'-';const statusClass=t.is_active?'bg-green-50 text-green-700':'bg-gray-100 text-gray-700';const expiryText=formatExpiry(t.expiry_time);const planText=formatPlanTypeWithTooltip(t);const sora2Text=formatSora2(t);const remainingText=formatSora2Remaining(t);const toggleLabel=t.is_active?'禁用':'启用';const toggleClass=t.is_active?'border-orange-200 text-orange-700 hover:bg-orange-50':'border-emerald-200 text-emerald-700 hover:bg-emerald-50';return`<tr class="hover:bg-muted/40"><td class="py-2 px-3 align-middle"><div class="min-w-0 space-y-1"><div class="flex items-center gap-2 min-w-0"><span class="text-sm font-medium truncate" title="${email}">${email}</span><span class="inline-flex items-center rounded px-2 py-0.5 text-xs ${statusClass}">${t.is_active?'活跃':'禁用'}</span></div><div class="text-xs text-muted-foreground truncate" title="Client: ${t.client_id||'-'} · 备注: ${remark}">Client: ${formatClientId(t.client_id)} · 备注: ${remark}</div></div></td><td class="py-2 px-3 align-middle"><div class="space-y-1 text-xs"><div class="flex items-center gap-2 min-w-0 truncate">${planText}${sora2Text}</div><div class="text-muted-foreground truncate">到期: ${expiryText} · 可用: ${remainingText}</div></div></td><td class="py-2 px-3 align-middle"><div class="flex items-center justify-center gap-2 text-xs"><span class="inline-flex items-center rounded bg-purple-50 text-purple-700 px-2 py-0.5">视频 ${videoDisplay}</span><span class="inline-flex items-center rounded bg-blue-50 text-blue-700 px-2 py-0.5">图 ${imageDisplay}</span><span class="inline-flex items-center rounded bg-red-50 text-red-700 px-2 py-0.5">错 ${t.error_count||0}</span></div></td><td class="py-2 px-3 text-center align-middle"><div class="flex w-full items-center justify-center gap-1.5"><button onclick="testToken(${t.id})" class="inline-flex items-center justify-center rounded-md border border-border hover:bg-accent h-7 w-7" title="测试" aria-label="测试"><svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></button><button onclick="openEditModal(${t.id})" class="inline-flex items-center justify-center rounded-md border border-border hover:bg-accent h-7 w-7" title="编辑" aria-label="编辑"><svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button><button onclick="toggleToken(${t.id},${t.is_active})" class="inline-flex items-center justify-center rounded-md border h-7 w-7 ${toggleClass}" title="${toggleLabel}" aria-label="${toggleLabel}"><svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.4 5.6a9 9 0 1 1-12.8 0"/></svg></button><button onclick="deleteToken(${t.id})" class="inline-flex items-center justify-center rounded-md border border-border hover:bg-destructive/10 hover:text-destructive h-7 w-7" title="删除" aria-label="删除"><svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></div></td></tr>`}).join('');updatePagination()},
         refreshTokens=async()=>{await loadTokens();await loadStats()},
         openAddModal=()=>$('addModal').classList.remove('hidden'),
         closeAddModal=()=>{$('addModal').classList.add('hidden');$('addTokenAT').value='';$('addTokenST').value='';$('addTokenRT').value='';$('addTokenClientId').value='';$('addTokenProxyUrl').value='';$('addTokenRemark').value='';$('addTokenImageEnabled').checked=true;$('addTokenVideoEnabled').checked=true;$('addTokenImageConcurrency').value='-1';$('addTokenVideoConcurrency').value='-1';$('addRTRefreshHint').classList.add('hidden')},
-        openEditModal=(id)=>{const token=allTokens.find(t=>t.id===id);if(!token)return showToast('Token不存在','error');$('editTokenId').value=token.id;$('editTokenAT').value=token.token||'';$('editTokenST').value=token.st||'';$('editTokenRT').value=token.rt||'';$('editTokenClientId').value=token.client_id||'';$('editTokenProxyUrl').value=token.proxy_url||'';$('editTokenRemark').value=token.remark||'';$('editTokenImageEnabled').checked=token.image_enabled!==false;$('editTokenVideoEnabled').checked=token.video_enabled!==false;$('editTokenImageConcurrency').value=token.image_concurrency||'-1';$('editTokenVideoConcurrency').value=token.video_concurrency||'-1';$('editModal').classList.remove('hidden')},
-        closeEditModal=()=>{$('editModal').classList.add('hidden');$('editTokenId').value='';$('editTokenAT').value='';$('editTokenST').value='';$('editTokenRT').value='';$('editTokenClientId').value='';$('editTokenProxyUrl').value='';$('editTokenRemark').value='';$('editTokenImageEnabled').checked=true;$('editTokenVideoEnabled').checked=true;$('editTokenImageConcurrency').value='';$('editTokenVideoConcurrency').value='';$('editRTRefreshHint').classList.add('hidden')},
+        openEditModal=(id)=>{const token=allTokens.find(t=>t.id===id);if(!token)return showToast('Token不存在','error');$('editTokenId').value=token.id;$('editTokenIdDisplay').value=token.id;$('editTokenEmail').value=token.email||'';$('editTokenAT').value=token.token||'';$('editTokenST').value=token.st||'';$('editTokenRT').value=token.rt||'';$('editTokenClientId').value=token.client_id||'';$('editTokenProxyUrl').value=token.proxy_url||'';$('editTokenRemark').value=token.remark||'';$('editTokenImageEnabled').checked=token.image_enabled!==false;$('editTokenVideoEnabled').checked=token.video_enabled!==false;$('editTokenImageConcurrency').value=token.image_concurrency||'-1';$('editTokenVideoConcurrency').value=token.video_concurrency||'-1';$('editModal').classList.remove('hidden')},
+        closeEditModal=()=>{$('editModal').classList.add('hidden');$('editTokenId').value='';$('editTokenIdDisplay').value='';$('editTokenEmail').value='';$('editTokenAT').value='';$('editTokenST').value='';$('editTokenRT').value='';$('editTokenClientId').value='';$('editTokenProxyUrl').value='';$('editTokenRemark').value='';$('editTokenImageEnabled').checked=true;$('editTokenVideoEnabled').checked=true;$('editTokenImageConcurrency').value='';$('editTokenVideoConcurrency').value='';$('editRTRefreshHint').classList.add('hidden')},
         submitEditToken=async()=>{const id=parseInt($('editTokenId').value),at=$('editTokenAT').value.trim(),st=$('editTokenST').value.trim(),rt=$('editTokenRT').value.trim(),clientId=$('editTokenClientId').value.trim(),proxyUrl=$('editTokenProxyUrl').value.trim(),remark=$('editTokenRemark').value.trim(),imageEnabled=$('editTokenImageEnabled').checked,videoEnabled=$('editTokenVideoEnabled').checked,imageConcurrency=$('editTokenImageConcurrency').value?parseInt($('editTokenImageConcurrency').value):null,videoConcurrency=$('editTokenVideoConcurrency').value?parseInt($('editTokenVideoConcurrency').value):null;if(!id)return showToast('Token ID无效','error');if(!at)return showToast('请输入 Access Token','error');const btn=$('editTokenBtn'),btnText=$('editTokenBtnText'),btnSpinner=$('editTokenBtnSpinner');btn.disabled=true;btnText.textContent='保存中...';btnSpinner.classList.remove('hidden');try{const r=await apiRequest(`/api/tokens/${id}`,{method:'PUT',body:JSON.stringify({token:at,st:st||null,rt:rt||null,client_id:clientId||null,proxy_url:proxyUrl||null,remark:remark||null,image_enabled:imageEnabled,video_enabled:videoEnabled,image_concurrency:imageConcurrency,video_concurrency:videoConcurrency})});if(!r){btn.disabled=false;btnText.textContent='保存';btnSpinner.classList.add('hidden');return}const d=await r.json();if(d.success){closeEditModal();await refreshTokens();showToast('Token更新成功','success')}else{showToast('更新失败: '+(d.detail||d.message||'未知错误'),'error')}}catch(e){showToast('更新失败: '+e.message,'error')}finally{btn.disabled=false;btnText.textContent='保存';btnSpinner.classList.add('hidden')}},
         convertST2AT=async()=>{const st=$('addTokenST').value.trim();if(!st)return showToast('请先输入 Session Token','error');try{showToast('正在转换 ST→AT...','info');const r=await apiRequest('/api/tokens/st2at',{method:'POST',body:JSON.stringify({st:st})});if(!r)return;const d=await r.json();if(d.success&&d.access_token){$('addTokenAT').value=d.access_token;showToast('转换成功！AT已自动填入','success')}else{showToast('转换失败: '+(d.message||d.detail||'未知错误'),'error')}}catch(e){showToast('转换失败: '+e.message,'error')}},
         convertRT2AT=async()=>{const rt=$('addTokenRT').value.trim();if(!rt)return showToast('请先输入 Refresh Token','error');const hint=$('addRTRefreshHint');hint.classList.add('hidden');try{showToast('正在转换 RT→AT...','info');const r=await apiRequest('/api/tokens/rt2at',{method:'POST',body:JSON.stringify({rt:rt})});if(!r)return;const d=await r.json();if(d.success&&d.access_token){$('addTokenAT').value=d.access_token;if(d.refresh_token){$('addTokenRT').value=d.refresh_token;hint.classList.remove('hidden');showToast('转换成功！AT已自动填入，RT已被刷新并更新','success')}else{showToast('转换成功！AT已自动填入','success')}}else{showToast('转换失败: '+(d.message||d.detail||'未知错误'),'error')}}catch(e){showToast('转换失败: '+e.message,'error')}},
@@ -991,6 +1028,7 @@
         batchActivateUsernames=async()=>{$('batchTestMenu').classList.add('hidden');const tokens=allTokens.filter(t=>t.is_active);if(tokens.length===0){showToast('没有活跃的Token','info');return}if(!confirm(`将为 ${tokens.length} 个活跃Token激活用户名，是否继续？`))return;openBatchOperationModal('批量激活用户名');let activated=0,alreadySet=0,failed=0;for(let i=0;i<tokens.length;i++){if(!batchOperationRunning)break;const t=tokens[i];$('batchOperationStatus').textContent=`正在激活: ${t.email}`;updateBatchOperationProgress(i+1,tokens.length,activated,failed);$('batchOperationStats').textContent=`激活: ${activated}, 已存在: ${alreadySet}, 失败: ${failed}`;try{const r=await apiRequest(`/api/tokens/${t.id}/activate-username`,{method:'POST',signal:batchOperationAbortController?.signal});if(!r){addBatchOperationLog(`[${i+1}/${tokens.length}] ${t.email}: 请求失败`,'error');failed++;continue}const d=await r.json();if(d.success){if(d.already_set){addBatchOperationLog(`[${i+1}/${tokens.length}] ${t.email}: 已存在 ${d.username}`,'info');alreadySet++}else{addBatchOperationLog(`[${i+1}/${tokens.length}] ${t.email}: 激活成功 ${d.username}`,'success');activated++}}else{addBatchOperationLog(`[${i+1}/${tokens.length}] ${t.email}: ${d.detail||d.message||'失败'}`,'error');failed++}}catch(e){if(e.name==='AbortError')break;addBatchOperationLog(`[${i+1}/${tokens.length}] ${t.email}: ${e.message}`,'error');failed++}}await refreshTokens();finishBatchOperation(`完成！激活: ${activated}, 已存在: ${alreadySet}, 失败: ${failed}`)},
         toggleToken=async(id,isActive)=>{const action=isActive?'disable':'enable';try{const r=await apiRequest(`/api/tokens/${id}/${action}`,{method:'POST'});if(!r)return;const d=await r.json();d.success?(await refreshTokens(),showToast(isActive?'Token已禁用':'Token已启用','success')):showToast('操作失败','error')}catch(e){showToast('操作失败: '+e.message,'error')}},
         toggleTokenStatus=async(id,active)=>{try{const r=await apiRequest(`/api/tokens/${id}/status`,{method:'PUT',body:JSON.stringify({is_active:active})});if(!r)return;const d=await r.json();d.success?(await refreshTokens(),showToast('状态更新成功','success')):showToast('更新失败','error')}catch(e){showToast('更新失败: '+e.message,'error')}},
+        handleTokenAction=(selectEl,id,isActive)=>{const action=selectEl.value;if(!action)return;selectEl.value='';if(action==='edit')return openEditModal(id);if(action==='test')return testToken(id);if(action==='activate')return activateUsername(id);if(action==='toggle')return toggleToken(id,isActive);if(action==='delete')return deleteToken(id)},
         deleteToken=async(id,skipConfirm=false)=>{if(!skipConfirm&&!confirm('确定要删除这个Token吗?'))return;try{const r=await apiRequest(`/api/tokens/${id}`,{method:'DELETE'});if(!r)return;const d=await r.json();if(d.success){await refreshTokens();if(!skipConfirm)showToast('删除成功','success');return true}else{if(!skipConfirm)showToast('删除失败','error');return false}}catch(e){if(!skipConfirm)showToast('删除失败: '+e.message,'error');return false}},
         copySora2Code=async(code)=>{if(!code){showToast('没有可复制的邀请码','error');return}try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(code);showToast(`邀请码已复制: ${code}`,'success')}else{const textarea=document.createElement('textarea');textarea.value=code;textarea.style.position='fixed';textarea.style.opacity='0';document.body.appendChild(textarea);textarea.select();const success=document.execCommand('copy');document.body.removeChild(textarea);if(success){showToast(`邀请码已复制: ${code}`,'success')}else{showToast('复制失败: 浏览器不支持','error')}}}catch(e){showToast('复制失败: '+e.message,'error')}},
         openSora2Modal=(id)=>{$('sora2TokenId').value=id;$('sora2InviteCode').value='';$('sora2Modal').classList.remove('hidden')},
@@ -1014,8 +1052,8 @@
         saveProxyConfig=async()=>{try{const r=await apiRequest('/api/proxy/config',{method:'POST',body:JSON.stringify({proxy_enabled:$('cfgProxyEnabled').checked,proxy_url:$('cfgProxyUrl').value.trim(),proxy_pool_enabled:$('cfgProxyPoolEnabled').checked})});if(!r)return;const d=await r.json();if(d.success){showToast('代理配置保存成功','success');await loadProxyConfig()}else{showToast('保存失败','error')}}catch(e){showToast('保存失败: '+e.message,'error')}},
         loadProxyPool=async()=>{try{const r=await apiRequest('/api/proxy/pool');if(!r)return;const d=await r.json();if(d.success){$('cfgProxyPool').value=d.content||''}}catch(e){console.error('加载代理池失败:',e);showToast('加载代理池失败: '+e.message,'error')}},
         splitConcatenatedProxies=(text)=>{return text.split(/(?=https?:\/\/)|(?=socks5h?:\/\/)|(?=st5\s+)/i).map(p=>p.trim()).filter(p=>p)},
-        saveProxyPool=async()=>{try{let content=$('cfgProxyPool').value;const lines=content.split('\n');const processedLines=[];const validFormats=[/^https?:\/\/[^:]+:[^@]+@[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:[^@]+@[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:\d+:[^:]+:.+$/,/^[^:]+:\d+$/,/^[^:]+:\d+:[^:]+:.+$/,/^st5\s+[^:]+:\d+:[^:]+:.+$/i];for(const line of lines){const trimmed=line.trim();if(!trimmed||trimmed.startsWith('#')){processedLines.push(line);continue}const split=splitConcatenatedProxies(trimmed);processedLines.push(...split)}content=processedLines.join('\n');$('cfgProxyPool').value=content;const invalidLines=[];const finalLines=content.split('\n');for(let i=0;i<finalLines.length;i++){const line=finalLines[i].trim();if(!line||line.startsWith('#'))continue;const isValid=validFormats.some(regex=>regex.test(line));if(!isValid){invalidLines.push({line:i+1,content:line})}}if(invalidLines.length>0){const errMsg=invalidLines.slice(0,5).map(e=>`第${e.line}行: ${e.content.substring(0,50)}${e.content.length>50?'...':''}`).join('\n');showToast(`格式错误！支持格式:\n• http://user:pass@host:port\n• socks5://user:pass@host:port\n• socks5://host:port:user:pass\n• st5 host:port:user:pass\n• host:port:user:pass\n\n错误行:\n${errMsg}${invalidLines.length>5?`\n...还有${invalidLines.length-5}行错误`:''}`,'error');return}const r=await apiRequest('/api/proxy/pool',{method:'POST',body:JSON.stringify({content:content})});if(!r)return;const d=await r.json();if(d.success){showToast('代理池保存成功','success');await loadProxyConfig()}else{showToast('保存失败: '+(d.message||'未知错误'),'error')}}catch(e){showToast('保存失败: '+e.message,'error')}},
-        testAllProxies=async(removeInvalid=false)=>{let proxyContent=$('cfgProxyPool').value.trim();if(!proxyContent){showToast('代理池为空','info');return}const validFormats=[/^https?:\/\/[^:]+:[^@]+@[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:[^@]+@[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:\d+:[^:]+:.+$/,/^[^:]+:\d+$/,/^[^:]+:\d+:[^:]+:.+$/,/^st5\s+[^:]+:\d+:[^:]+:.+$/i];const allProxies=[];proxyContent.split('\n').forEach(line=>{const trimmed=line.trim();if(!trimmed||trimmed.startsWith('#'))return;const split=splitConcatenatedProxies(trimmed);allProxies.push(...split)});const proxies=allProxies.filter(p=>validFormats.some(regex=>regex.test(p)));if(proxies.length===0){showToast('没有有效格式的代理','info');return}if(!confirm(`将检测 ${proxies.length} 个代理${removeInvalid?'，无效代理将被剔除':''}，是否继续？`))return;openBatchOperationModal(removeInvalid?'检测并剔除无效代理':'检测全部代理');let valid=0,invalid=0;const validProxies=[];const results=[];for(let i=0;i<proxies.length;i++){if(!batchOperationRunning)break;const proxy=proxies[i];$('batchOperationStatus').textContent=`正在检测: ${proxy}`;updateBatchOperationProgress(i+1,proxies.length,valid,invalid);try{const r=await apiRequest('/api/proxy/test-single',{method:'POST',body:JSON.stringify({proxy_url:proxy}),signal:batchOperationAbortController?.signal});if(!r){addBatchOperationLog(`[${i+1}/${proxies.length}] ${proxy}: 请求失败`,'error');invalid++;results.push({proxy,success:false,error:'请求失败'});continue}const d=await r.json();if(d.success&&d.valid){addBatchOperationLog(`[${i+1}/${proxies.length}] ${proxy}: 有效 (${d.latency||0}ms)`,'success');valid++;validProxies.push(proxy);results.push({proxy,success:true,latency:d.latency||0})}else{addBatchOperationLog(`[${i+1}/${proxies.length}] ${proxy}: ${d.error||'无效'}`,'error');invalid++;results.push({proxy,success:false,error:d.error||'无效'})}}catch(e){if(e.name==='AbortError')break;addBatchOperationLog(`[${i+1}/${proxies.length}] ${proxy}: ${e.message}`,'error');invalid++;results.push({proxy,success:false,error:e.message})}}if(removeInvalid&&batchOperationRunning&&validProxies.length<proxies.length){const comments=proxyContent.split('\n').filter(p=>p.trim().startsWith('#'));const newContent=[...comments,...validProxies].join('\n');$('cfgProxyPool').value=newContent;await saveProxyPool()}$('proxyTestResults').classList.remove('hidden');$('proxyTestTotal').textContent=proxies.length;$('proxyTestValid').textContent=valid;$('proxyTestInvalid').textContent=invalid;$('proxyTestRemoved').textContent=removeInvalid?(proxies.length-validProxies.length):0;const list=$('proxyTestList');list.innerHTML='';results.forEach(r=>{const div=document.createElement('div');div.className='flex items-center justify-between p-1 rounded '+(r.success?'bg-green-50':'bg-red-50');div.innerHTML='<span class="truncate flex-1">'+(r.proxy||'未知')+'</span><span class="ml-2 '+(r.success?'text-green-600':'text-red-600')+'">'+(r.success?'✓ '+r.latency+'ms':'✗ '+r.error)+'</span>';list.appendChild(div)});finishBatchOperation(`完成！有效: ${valid}, 无效: ${invalid}${removeInvalid?`, 已剔除: ${proxies.length-validProxies.length}`:''}`)},
+        saveProxyPool=async()=>{try{let content=$('cfgProxyPool').value;const lines=content.split('\n');const processedLines=[];const validFormats=[/^https?:\/\/[^:]+:[^@]+@[^:]+:\d+$/,/^https?:\/\/[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:[^@]+@[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:\d+:[^:]+:.+$/,/^[^:]+:\d+$/,/^[^:]+:\d+:[^:]+:.+$/,/^st5\s+[^:]+:\d+:[^:]+:.+$/i];for(const line of lines){const trimmed=line.trim();if(!trimmed||trimmed.startsWith('#')){processedLines.push(line);continue}const split=splitConcatenatedProxies(trimmed);processedLines.push(...split)}content=processedLines.join('\n');$('cfgProxyPool').value=content;const invalidLines=[];const finalLines=content.split('\n');for(let i=0;i<finalLines.length;i++){const line=finalLines[i].trim();if(!line||line.startsWith('#'))continue;const isValid=validFormats.some(regex=>regex.test(line));if(!isValid){invalidLines.push({line:i+1,content:line})}}if(invalidLines.length>0){const errMsg=invalidLines.slice(0,5).map(e=>`第${e.line}行: ${e.content.substring(0,50)}${e.content.length>50?'...':''}`).join('\n');showToast(`格式错误！支持格式:\n• http(s)://user:pass@host:port\n• http(s)://host:port\n• socks5(h)://user:pass@host:port\n• socks5(h)://host:port\n• socks5://host:port:user:pass\n• st5 host:port:user:pass\n• host:port\n• host:port:user:pass\n\n错误行:\n${errMsg}${invalidLines.length>5?`\n...还有${invalidLines.length-5}行错误`:''}`,'error');return}const r=await apiRequest('/api/proxy/pool',{method:'POST',body:JSON.stringify({content:content})});if(!r)return;const d=await r.json();if(d.success){showToast('代理池保存成功','success');await loadProxyConfig()}else{showToast('保存失败: '+(d.message||'未知错误'),'error')}}catch(e){showToast('保存失败: '+e.message,'error')}},
+        testAllProxies=async(removeInvalid=false)=>{let proxyContent=$('cfgProxyPool').value.trim();if(!proxyContent){showToast('代理池为空','info');return}const validFormats=[/^https?:\/\/[^:]+:[^@]+@[^:]+:\d+$/,/^https?:\/\/[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:[^@]+@[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:\d+$/,/^socks5h?:\/\/[^:]+:\d+:[^:]+:.+$/,/^[^:]+:\d+$/,/^[^:]+:\d+:[^:]+:.+$/,/^st5\s+[^:]+:\d+:[^:]+:.+$/i];const allProxies=[];proxyContent.split('\n').forEach(line=>{const trimmed=line.trim();if(!trimmed||trimmed.startsWith('#'))return;const split=splitConcatenatedProxies(trimmed);allProxies.push(...split)});const proxies=allProxies.filter(p=>validFormats.some(regex=>regex.test(p)));if(proxies.length===0){showToast('没有有效格式的代理','info');return}if(!confirm(`将检测 ${proxies.length} 个代理${removeInvalid?'，无效代理将被剔除':''}，是否继续？`))return;openBatchOperationModal(removeInvalid?'检测并剔除无效代理':'检测全部代理');let valid=0,invalid=0;const validProxies=[];const results=[];for(let i=0;i<proxies.length;i++){if(!batchOperationRunning)break;const proxy=proxies[i];$('batchOperationStatus').textContent=`正在检测: ${proxy}`;updateBatchOperationProgress(i+1,proxies.length,valid,invalid);try{const r=await apiRequest('/api/proxy/test-single',{method:'POST',body:JSON.stringify({proxy_url:proxy}),signal:batchOperationAbortController?.signal});if(!r){addBatchOperationLog(`[${i+1}/${proxies.length}] ${proxy}: 请求失败`,'error');invalid++;results.push({proxy,success:false,error:'请求失败'});continue}const d=await r.json();if(d.success&&d.valid){addBatchOperationLog(`[${i+1}/${proxies.length}] ${proxy}: 有效 (${d.latency||0}ms)`,'success');valid++;validProxies.push(proxy);results.push({proxy,success:true,latency:d.latency||0})}else{addBatchOperationLog(`[${i+1}/${proxies.length}] ${proxy}: ${d.error||'无效'}`,'error');invalid++;results.push({proxy,success:false,error:d.error||'无效'})}}catch(e){if(e.name==='AbortError')break;addBatchOperationLog(`[${i+1}/${proxies.length}] ${proxy}: ${e.message}`,'error');invalid++;results.push({proxy,success:false,error:e.message})}}if(removeInvalid&&batchOperationRunning&&validProxies.length<proxies.length){const comments=proxyContent.split('\n').filter(p=>p.trim().startsWith('#'));const newContent=[...comments,...validProxies].join('\n');$('cfgProxyPool').value=newContent;await saveProxyPool()}$('proxyTestResults').classList.remove('hidden');$('proxyTestTotal').textContent=proxies.length;$('proxyTestValid').textContent=valid;$('proxyTestInvalid').textContent=invalid;$('proxyTestRemoved').textContent=removeInvalid?(proxies.length-validProxies.length):0;const list=$('proxyTestList');list.innerHTML='';results.forEach(r=>{const div=document.createElement('div');div.className='flex items-center justify-between p-1 rounded '+(r.success?'bg-green-50':'bg-red-50');div.innerHTML='<span class="truncate flex-1">'+(r.proxy||'未知')+'</span><span class="ml-2 '+(r.success?'text-green-600':'text-red-600')+'">'+(r.success?'✓ '+r.latency+'ms':'✗ '+r.error)+'</span>';list.appendChild(div)});finishBatchOperation(`完成！有效: ${valid}, 无效: ${invalid}${removeInvalid?`, 已剔除: ${proxies.length-validProxies.length}`:''}`)},
         loadWatermarkFreeConfig=async()=>{try{const r=await apiRequest('/api/watermark-free/config');if(!r)return;const d=await r.json();$('cfgWatermarkFreeEnabled').checked=d.watermark_free_enabled||false;$('cfgParseMethod').value=d.parse_method||'third_party';$('cfgCustomParseUrl').value=d.custom_parse_url||'';$('cfgCustomParseToken').value=d.custom_parse_token||'';toggleWatermarkFreeOptions();toggleCustomParseOptions()}catch(e){console.error('加载无水印模式配置失败:',e)}},
         saveWatermarkFreeConfig=async()=>{try{const enabled=$('cfgWatermarkFreeEnabled').checked,parseMethod=$('cfgParseMethod').value,customUrl=$('cfgCustomParseUrl').value.trim(),customToken=$('cfgCustomParseToken').value.trim();if(enabled&&parseMethod==='custom'){if(!customUrl)return showToast('请输入解析服务器地址','error');if(!customToken)return showToast('请输入访问密钥','error')}const r=await apiRequest('/api/watermark-free/config',{method:'POST',body:JSON.stringify({watermark_free_enabled:enabled,parse_method:parseMethod,custom_parse_url:customUrl||null,custom_parse_token:customToken||null})});if(!r)return;const d=await r.json();d.success?showToast('无水印模式配置保存成功','success'):showToast('保存失败','error')}catch(e){showToast('保存失败: '+e.message,'error')}},
         toggleWatermarkFreeOptions=()=>{const enabled=$('cfgWatermarkFreeEnabled').checked;$('watermarkFreeOptions').style.display=enabled?'block':'none'},
@@ -1039,13 +1077,19 @@
         saveGenerationTimeout=async()=>{const imageTimeout=parseInt($('cfgImageTimeout').value)||300,videoTimeout=parseInt($('cfgVideoTimeout').value)||1500;console.log('保存生成超时配置:',{imageTimeout,videoTimeout});if(imageTimeout<60||imageTimeout>3600)return showToast('图片超时时间必须在 60-3600 秒之间','error');if(videoTimeout<60||videoTimeout>7200)return showToast('视频超时时间必须在 60-7200 秒之间','error');try{const r=await apiRequest('/api/generation/timeout',{method:'POST',body:JSON.stringify({image_timeout:imageTimeout,video_timeout:videoTimeout})});if(!r){console.error('保存请求失败');return}const d=await r.json();console.log('保存结果:',d);if(d.success){showToast('生成超时配置保存成功','success');await new Promise(r=>setTimeout(r,200));await loadGenerationTimeout()}else{console.error('保存失败:',d);showToast('保存失败','error')}}catch(e){console.error('保存失败:',e);showToast('保存失败: '+e.message,'error')}},
         toggleATAutoRefresh=async()=>{try{const enabled=$('atAutoRefreshToggle').checked;const r=await apiRequest('/api/token-refresh/enabled',{method:'POST',body:JSON.stringify({enabled:enabled})});if(!r){$('atAutoRefreshToggle').checked=!enabled;return}const d=await r.json();if(d.success){showToast(enabled?'AT自动刷新已启用':'AT自动刷新已禁用','success')}else{showToast('操作失败: '+(d.detail||'未知错误'),'error');$('atAutoRefreshToggle').checked=!enabled}}catch(e){showToast('操作失败: '+e.message,'error');$('atAutoRefreshToggle').checked=!enabled}},
         loadATAutoRefreshConfig=async()=>{try{const r=await apiRequest('/api/token-refresh/config');if(!r)return;const d=await r.json();if(d.success&&d.config){$('atAutoRefreshToggle').checked=d.config.at_auto_refresh_enabled||false}else{console.error('AT自动刷新配置数据格式错误:',d)}}catch(e){console.error('加载AT自动刷新配置失败:',e)}},
-        loadLogs=async()=>{try{const r=await apiRequest('/api/logs?limit=100');if(!r)return;const logs=await r.json();window._logsData=logs;const tb=$('logsTableBody');tb.innerHTML=logs.map((l,i)=>`<tr><td class="py-2.5 px-3">${l.operation}</td><td class="py-2.5 px-3"><span class="text-xs ${l.token_email?'text-blue-600':'text-muted-foreground'}">${l.token_email||'未知'}</span></td><td class="py-2.5 px-3"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs ${l.status_code===-1?'bg-blue-50 text-blue-700':l.status_code===200?'bg-green-50 text-green-700':'bg-red-50 text-red-700'}">${l.status_code===-1?'生成中':l.status_code}</span></td><td class="py-2.5 px-3">${l.duration===-1?'生成中':l.duration.toFixed(2)+'秒'}</td><td class="py-2.5 px-3 text-xs text-muted-foreground">${l.created_at?new Date(l.created_at).toLocaleString('zh-CN'):'-'}</td><td class="py-2.5 px-3"><button onclick="showLogDetail(${i})" class="text-xs text-primary hover:underline">详情</button></td></tr>`).join('')}catch(e){console.error('加载日志失败:',e)}},
-        showLogDetail=(idx)=>{const l=window._logsData[idx];if(!l)return;let reqBody='',resBody='';try{reqBody=l.request_body?JSON.stringify(JSON.parse(l.request_body),null,2):'-'}catch{reqBody=l.request_body||'-'}try{resBody=l.response_body?JSON.stringify(JSON.parse(l.response_body),null,2):'-'}catch{resBody=l.response_body||'-'}let progressInfo='';if(l.status_code===-1&&l.task_status){progressInfo=`<div><p class="text-sm font-medium mb-1">任务状态</p><p class="text-sm text-blue-600">${l.task_status}${l.progress!==undefined?' ('+Math.round(l.progress)+'%)':''}</p></div>`}$('logDetailContent').innerHTML=`<div class="space-y-4"><div><p class="text-sm font-medium mb-1">操作</p><p class="text-sm text-muted-foreground">${l.operation}</p></div><div><p class="text-sm font-medium mb-1">Token</p><p class="text-sm text-muted-foreground">${l.token_email||'未知'}</p></div><div><p class="text-sm font-medium mb-1">状态码</p><p class="text-sm"><span class="inline-flex items-center rounded px-2 py-0.5 text-xs ${l.status_code===-1?'bg-blue-50 text-blue-700':l.status_code===200?'bg-green-50 text-green-700':'bg-red-50 text-red-700'}">${l.status_code===-1?'生成中':l.status_code}</span></p></div>${progressInfo}<div><p class="text-sm font-medium mb-1">耗时</p><p class="text-sm text-muted-foreground">${l.duration===-1?'生成中':l.duration.toFixed(2)+' 秒'}</p></div><div><p class="text-sm font-medium mb-1">时间</p><p class="text-sm text-muted-foreground">${l.created_at?new Date(l.created_at).toLocaleString('zh-CN'):'-'}</p></div><div><p class="text-sm font-medium mb-1">请求内容</p><pre class="text-xs bg-muted p-2 rounded overflow-auto max-h-40">${reqBody}</pre></div><div><p class="text-sm font-medium mb-1">响应内容</p><pre class="text-xs bg-muted p-2 rounded overflow-auto max-h-40">${resBody}</pre></div></div>`;$('logDetailModal').classList.remove('hidden')},
+        clamp=(value,min,max)=>Math.min(max,Math.max(min,value)),
+        getLogProgress=(l)=>{if(typeof l.progress==='number'){return clamp(Math.round(l.progress),0,100)}if(l.status_code===200){return 100}return null},
+        parseLogResponse=(l)=>{if(!l||!l.response_body)return null;try{return JSON.parse(l.response_body)}catch{return null}},
+        getLogUrls=(l)=>{const data=parseLogResponse(l);if(!data||typeof data!=='object')return[];if(Array.isArray(data.urls))return data.urls.filter(Boolean);if(typeof data.url==='string')return[data.url];if(data.data&&Array.isArray(data.data)){const urls=data.data.map(item=>item&&item.url).filter(Boolean);if(urls.length)return urls}return[]},
+        getLogPermalink=(l)=>{const data=parseLogResponse(l);if(!data||typeof data!=='object')return'';if(typeof data.permalink==='string')return data.permalink;return''},
+        formatLogStatus=(l)=>{const code=l.status_code;if(code===-1)return{text:'生成中',className:'bg-blue-50 text-blue-700 border-blue-200'};if(code===200)return{text:'成功',className:'bg-green-50 text-green-700 border-green-200'};if(code===499)return{text:'取消',className:'bg-gray-100 text-gray-700 border-gray-200'};if(code===undefined||code===null)return{text:'-',className:'bg-gray-100 text-gray-700 border-gray-200'};return{text:String(code),className:'bg-red-50 text-red-700 border-red-200'}},
+        loadLogs=async()=>{try{const r=await apiRequest('/api/logs?limit=100');if(!r)return;const logs=await r.json();window._logsData=logs;const tb=$('logsTableBody');tb.innerHTML=logs.map((l,i)=>{const status=formatLogStatus(l);const progressValue=getLogProgress(l);const progressText=progressValue!==null?`${progressValue}%`:'-';const progressColor=progressValue===100?'bg-green-600':'bg-blue-600';const progressBar=progressValue!==null?`<div class="h-1.5 w-full rounded bg-muted/60 overflow-hidden"><div class="h-full ${progressColor}" style="width:${progressValue}%"></div></div>`:`<div class="h-1.5 w-full rounded bg-muted/60"></div>`;const durationText=l.duration===-1?'生成中':l.duration.toFixed(2)+' 秒';const timeText=l.created_at?new Date(l.created_at).toLocaleString('zh-CN'):'-';const tokenSub=l.token_username?`@${l.token_username}`:'';const taskIdShort=l.task_id?`${l.task_id.slice(0,8)}...`:'-';const taskStatusText=l.task_status?l.task_status:'';return`<tr class="hover:bg-muted/40"><td class="py-3 px-3"><div class="font-medium">${l.operation}</div><div class="text-xs font-mono text-muted-foreground mt-1">${taskIdShort}</div></td><td class="py-3 px-3"><div class="text-sm ${l.token_email?'text-blue-600':'text-muted-foreground'}">${l.token_email||'未知'}</div>${tokenSub?`<div class="text-xs text-muted-foreground mt-1">${tokenSub}</div>`:''}</td><td class="py-3 px-3"><div class="inline-flex items-center rounded border px-2 py-0.5 text-xs ${status.className}">${status.text}</div>${taskStatusText?`<div class="text-xs text-muted-foreground mt-1">${taskStatusText}</div>`:''}</td><td class="py-3 px-3 min-w-[140px]"><div class="text-xs text-muted-foreground mb-1">${progressText}</div>${progressBar}</td><td class="py-3 px-3 text-xs">${durationText}</td><td class="py-3 px-3 text-xs text-muted-foreground">${timeText}</td><td class="py-3 px-3 text-right"><button onclick="showLogDetail(${i})" class="inline-flex items-center justify-center rounded-md border border-border hover:bg-accent h-7 px-2 text-xs">查看</button></td></tr>`}).join('')}catch(e){console.error('加载日志失败:',e)}},
+        showLogDetail=(idx)=>{const l=window._logsData[idx];if(!l)return;let reqBody='',resBody='';try{reqBody=l.request_body?JSON.stringify(JSON.parse(l.request_body),null,2):'-'}catch{reqBody=l.request_body||'-'}try{resBody=l.response_body?JSON.stringify(JSON.parse(l.response_body),null,2):'-'}catch{resBody=l.response_body||'-'}const status=formatLogStatus(l);const progressValue=getLogProgress(l);const progressText=progressValue!==null?`${progressValue}%`:'无';const progressColor=progressValue===100?'bg-green-600':'bg-blue-600';const progressBar=progressValue!==null?`<div class="mt-2 h-2 w-full rounded bg-muted/60 overflow-hidden"><div class="h-full ${progressColor}" style="width:${progressValue}%"></div></div>`:`<div class="mt-2 h-2 w-full rounded bg-muted/60"></div>`;const durationText=l.duration===-1?'生成中':l.duration.toFixed(2)+' 秒';const timeText=l.created_at?new Date(l.created_at).toLocaleString('zh-CN'):'-';const taskStatus=l.task_status||'-';const tokenSub=l.token_username?`@${l.token_username}`:'';const taskId=l.task_id||'-';const urls=getLogUrls(l);const permalink=getLogPermalink(l);const urlSection=urls.length?`<div><p class="text-sm font-medium mb-1">结果URL</p><div class="space-y-1 text-xs">${urls.map(u=>`<a href="${u}" target="_blank" rel="noreferrer" class="text-blue-600 hover:underline break-all">${u}</a>`).join('')}</div></div>`:'';const permalinkSection=permalink?`<div><p class="text-sm font-medium mb-1">Permalink</p><a href="${permalink}" target="_blank" rel="noreferrer" class="text-xs text-blue-600 hover:underline break-all">${permalink}</a></div>`:'';$('logDetailContent').innerHTML=`<div class="space-y-5"><div class="grid gap-4 sm:grid-cols-2"><div><p class="text-sm font-medium mb-1">操作</p><p class="text-sm text-muted-foreground">${l.operation}</p></div><div><p class="text-sm font-medium mb-1">Token</p><p class="text-sm text-muted-foreground">${l.token_email||'未知'}${tokenSub?` <span class="text-xs text-muted-foreground">${tokenSub}</span>`:''}</p></div><div><p class="text-sm font-medium mb-1">状态</p><span class="inline-flex items-center rounded border px-2 py-0.5 text-xs ${status.className}">${status.text}</span></div><div><p class="text-sm font-medium mb-1">进度</p><p class="text-sm text-muted-foreground">${progressText}</p>${progressBar}</div><div><p class="text-sm font-medium mb-1">耗时</p><p class="text-sm text-muted-foreground">${durationText}</p></div><div><p class="text-sm font-medium mb-1">时间</p><p class="text-sm text-muted-foreground">${timeText}</p></div></div><div class="grid gap-4 sm:grid-cols-2 border-t border-border pt-4"><div><p class="text-sm font-medium mb-1">任务ID</p><p class="text-xs font-mono text-muted-foreground break-all">${taskId}</p></div><div><p class="text-sm font-medium mb-1">任务状态</p><p class="text-sm text-muted-foreground">${taskStatus}</p></div></div>${urlSection}${permalinkSection}<div><p class="text-sm font-medium mb-1">请求内容</p><pre class="text-xs bg-muted p-2 rounded overflow-auto max-h-40">${reqBody}</pre></div><div><p class="text-sm font-medium mb-1">响应内容</p><pre class="text-xs bg-muted p-2 rounded overflow-auto max-h-40">${resBody}</pre></div></div>`;$('logDetailModal').classList.remove('hidden')},
         closeLogDetailModal=()=>{$('logDetailModal').classList.add('hidden')},
         refreshLogs=async()=>{await loadLogs()},
         showToast=(m,t='info')=>{const d=document.createElement('div'),bc={success:'bg-green-600',error:'bg-destructive',info:'bg-primary'};d.className=`fixed bottom-4 right-4 ${bc[t]||bc.info} text-white px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium z-50 animate-slide-up`;d.textContent=m;document.body.appendChild(d);setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .3s';setTimeout(()=>d.parentNode&&document.body.removeChild(d),300)},2000)},
         logout=()=>{if(!confirm('确定要退出登录吗?'))return;localStorage.removeItem('adminToken');location.href='/login'},
-        switchTab=t=>{const cap=n=>n.charAt(0).toUpperCase()+n.slice(1);['tokens','settings','logs','generate'].forEach(n=>{const active=n===t;$(`panel${cap(n)}`).classList.toggle('hidden',!active);$(`tab${cap(n)}`).classList.toggle('border-primary',active);$(`tab${cap(n)}`).classList.toggle('text-primary',active);$(`tab${cap(n)}`).classList.toggle('border-transparent',!active);$(`tab${cap(n)}`).classList.toggle('text-muted-foreground',!active)});if(t==='settings'){loadAdminConfig();loadProxyConfig();loadProxyPool();loadWatermarkFreeConfig();loadCloudflareSolverConfig();loadCfState();loadCacheConfig();loadGenerationTimeout();loadATAutoRefreshConfig()}else if(t==='logs'){loadLogs()}else if(t==='webdav'){loadWebdavConfig();loadWebdavStats();refreshWebdavVideos();refreshUploadLogs()}},
+        switchTab=t=>{const cap=n=>n.charAt(0).toUpperCase()+n.slice(1);['tokens','settings','logs'].forEach(n=>{const active=n===t;$(`panel${cap(n)}`).classList.toggle('hidden',!active);$(`tab${cap(n)}`).classList.toggle('border-primary',active);$(`tab${cap(n)}`).classList.toggle('text-primary',active);$(`tab${cap(n)}`).classList.toggle('border-transparent',!active);$(`tab${cap(n)}`).classList.toggle('text-muted-foreground',!active)});if(t==='settings'){loadAdminConfig();loadProxyConfig();loadProxyPool();loadWatermarkFreeConfig();loadCloudflareSolverConfig();loadCfState();loadCacheConfig();loadGenerationTimeout();loadATAutoRefreshConfig()}else if(t==='logs'){loadLogs()}else if(t==='webdav'){loadWebdavConfig();loadWebdavStats();refreshWebdavVideos();refreshUploadLogs()}},
         // WebDAV functions
         toggleWebdavOptions=()=>{const enabled=$('cfgWebdavEnabled').checked;$('webdavOptions').style.display=enabled?'block':'none'},
         loadWebdavConfig=async()=>{try{const r=await apiRequest('/api/webdav/config');if(!r)return;const d=await r.json();if(d.success&&d.config){$('cfgWebdavEnabled').checked=d.config.webdav_enabled||false;$('cfgWebdavUrl').value=d.config.webdav_url||'';$('cfgWebdavUsername').value=d.config.webdav_username||'';$('cfgWebdavPassword').value=d.config.webdav_password||'';$('cfgWebdavUploadPath').value=d.config.webdav_upload_path||'/video';$('cfgAutoDeleteEnabled').checked=d.config.auto_delete_enabled||false;$('cfgAutoDeleteDays').value=d.config.auto_delete_days||30;toggleWebdavOptions()}}catch(e){console.error('加载WebDAV配置失败:',e)}},

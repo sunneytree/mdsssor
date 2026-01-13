@@ -24,7 +24,7 @@ wheels/
 venv/
 ENV/
 env/
-
+logs.txt
 # Database
 *.db
 *.sqlite
@@ -55,8 +55,10 @@ sora2api/
 原sora2api/
 new-api-main/
 new-api/
+data/
 原new-api/
 sora2api-main/.env
 # Test files
 test_concurrent.py
 openai_sentinel_token.py
+logs.txt

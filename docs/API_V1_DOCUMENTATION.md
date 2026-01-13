@@ -778,6 +778,42 @@ curl -X GET "http://your-server/v1/feed?limit=10&cut=nf2_top" \
 
 ---
 
+### POST /v1/enhance_prompt
+
+提示词增强（调用 Sora editor/enhance_prompt）。
+
+**查询参数:**
+- `token_id` (可选): 指定使用的 Token ID
+
+**请求参数 (JSON):**
+
+| 参数 | 类型 | 必填 | 描述 |
+|------|------|------|------|
+| `prompt` | string | 是 | 原始提示词 |
+| `expansion_level` | string | 否 | 扩写级别：`short` / `medium` / `long`，默认 `medium` |
+| `duration_s` | integer | 否 | 时长：`10` 或 `15` |
+
+**请求示例:**
+```bash
+curl -X POST "http://your-server/v1/enhance_prompt" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "多镜头多角度拍摄...",
+    "expansion_level": "long",
+    "duration_s": 15
+  }'
+```
+
+**响应示例:**
+```json
+{
+  "enhanced_prompt": "PRIMARY: ...\nSETTING: ...\nLOOK: ..."
+}
+```
+
+---
+
 ### GET /v1/tokens/{token_id}/pending-tasks
 
 获取指定 Token 的待处理任务（v1 版本）。

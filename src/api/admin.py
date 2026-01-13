@@ -1208,14 +1208,14 @@ async def get_logs(limit: int = 100, token: str = Depends(verify_admin_token)):
             "task_id": log.get("task_id")
         }
 
-        # If task_id exists and status is in-progress, get task progress
-        if log.get("task_id") and log.get("status_code") == -1:
-            task = await db.get_task(log.get("task_id"))
-            if task:
-                log_data["progress"] = task.progress
-                log_data["task_status"] = task.status
-                if task.status == "cancelled":
-                    log_data["status_code"] = 499
+        task_status = log.get("task_status")
+        task_progress = log.get("task_progress")
+        if task_status is not None:
+            log_data["task_status"] = task_status
+        if task_progress is not None:
+            log_data["progress"] = task_progress
+        if log.get("status_code") == -1 and task_status == "cancelled":
+            log_data["status_code"] = 499
 
         result.append(log_data)
 

@@ -7,7 +7,7 @@ from typing import Optional, List, Dict
 from pathlib import Path
 from contextlib import asynccontextmanager
 from .models import Token, TokenStats, Task, RequestLog, AdminConfig, ProxyConfig, WatermarkFreeConfig, CacheConfig, GenerationConfig, TokenRefreshConfig, CloudflareSolverConfig, Character, WebDAVConfig, VideoRecord, UploadLog
-from .db_pool import get_db_connection
+from .db_pool import get_db_connection, get_pool
 from .config import config
 
 
@@ -182,6 +182,15 @@ class Database:
                 async with conn.cursor(aiomysql.DictCursor) as cursor:
                     yield _MySQLConnectionWrapper(conn, cursor)
         else:
+            pool = get_pool()
+            if pool:
+                if readonly:
+                    async with pool.read_connection() as conn:
+                        yield conn
+                else:
+                    async with pool.write_connection() as conn:
+                        yield conn
+                return
             # SQLite with high concurrency optimizations
             conn = await aiosqlite.connect(self.db_path, timeout=60.0)
             try:
@@ -583,6 +592,9 @@ class Database:
         await db.execute("CREATE INDEX IF NOT EXISTS idx_video_record_task_id ON video_records(task_id)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_video_record_status ON video_records(status)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_upload_log_video_record_id ON upload_logs(video_record_id)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_token_email ON tokens(email)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs(created_at)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_created ON request_logs(task_id, status_code, created_at)")
         
         # MySQL: 移除 tasks 表的外键约束，允许 token_id 为 NULL
         if self.db_type == "mysql":
@@ -856,11 +868,14 @@ class Database:
             await db.execute("CREATE INDEX IF NOT EXISTS idx_task_id ON tasks(task_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_task_status ON tasks(status)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_token_active ON tokens(is_active)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_token_email ON tokens(email)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_character_cameo_id ON characters(cameo_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_character_token_id ON characters(token_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_video_record_task_id ON video_records(task_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_video_record_status ON video_records(status)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_upload_log_video_record_id ON upload_logs(video_record_id)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs(created_at)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_created ON request_logs(task_id, status_code, created_at)")
 
             # Migration: Add daily statistics columns if they don't exist
             if not await self._column_exists(db, "token_stats", "today_image_count"):
@@ -923,7 +938,7 @@ class Database:
     
     async def get_token(self, token_id: int) -> Optional[Token]:
         """Get token by ID"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM tokens WHERE id = ?", (token_id,))
             row = await cursor.fetchone()
@@ -933,7 +948,7 @@ class Database:
     
     async def get_token_by_value(self, token: str) -> Optional[Token]:
         """Get token by value"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM tokens WHERE token = ?", (token,))
             row = await cursor.fetchone()
@@ -943,7 +958,7 @@ class Database:
 
     async def get_token_by_email(self, email: str) -> Optional[Token]:
         """Get token by email"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM tokens WHERE email = ?", (email,))
             row = await cursor.fetchone()
@@ -953,7 +968,7 @@ class Database:
     
     async def get_active_tokens(self) -> List[Token]:
         """Get all active tokens (enabled, not cooled down, not expired)"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             # MySQL doesn't support NULLS FIRST, use COALESCE or CASE instead
             if self.db_type == "mysql":
@@ -977,7 +992,7 @@ class Database:
     
     async def get_all_tokens(self) -> List[Token]:
         """Get all tokens"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM tokens ORDER BY created_at DESC")
             rows = await cursor.fetchall()
@@ -1189,7 +1204,7 @@ class Database:
     # Token stats operations
     async def get_token_stats(self, token_id: int) -> Optional[TokenStats]:
         """Get token statistics"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM token_stats WHERE token_id = ?", (token_id,))
             row = await cursor.fetchone()
@@ -1207,7 +1222,7 @@ class Database:
         Returns:
             Dictionary mapping token_id to TokenStats
         """
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM token_stats")
             rows = await cursor.fetchall()
@@ -1249,7 +1264,7 @@ class Database:
     async def get_stats(self) -> dict:
         """Get aggregated statistics across all tokens"""
         from datetime import date
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             today = str(date.today())
             cursor = await db.execute("""
                 SELECT 
@@ -1318,7 +1333,7 @@ class Database:
         cutoff_image = (datetime.now() - timedelta(seconds=config.image_timeout)).strftime("%Y-%m-%d %H:%M:%S")
         cutoff_video = (datetime.now() - timedelta(seconds=config.video_timeout)).strftime("%Y-%m-%d %H:%M:%S")
 
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             cursor = await db.execute("""
                 SELECT 
                     SUM(CASE 
@@ -1623,7 +1638,7 @@ class Database:
     
     async def get_task(self, task_id: str) -> Optional[Task]:
         """Get task by ID"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM tasks WHERE task_id = ?", (task_id,))
             row = await cursor.fetchone()
@@ -1633,7 +1648,7 @@ class Database:
 
     async def get_recent_tasks(self, limit: int = 10) -> List[Task]:
         """Get recent tasks ordered by creation time"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute(
                 "SELECT * FROM tasks ORDER BY created_at DESC LIMIT ?", (limit,)
@@ -1747,7 +1762,7 @@ class Database:
 
     async def get_recent_logs(self, limit: int = 100) -> List[dict]:
         """Get recent logs with token email and task progress"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("""
                 SELECT
@@ -1761,9 +1776,12 @@ class Database:
                     rl.duration,
                     rl.created_at,
                     t.email as token_email,
-                    t.username as token_username
+                    t.username as token_username,
+                    tk.progress as task_progress,
+                    tk.status as task_status
                 FROM request_logs rl
                 LEFT JOIN tokens t ON rl.token_id = t.id
+                LEFT JOIN tasks tk ON rl.task_id = tk.task_id
                 ORDER BY rl.created_at DESC
                 LIMIT ?
             """, (limit,))
@@ -1773,7 +1791,7 @@ class Database:
     # Admin config operations
     async def get_admin_config(self) -> AdminConfig:
         """Get admin configuration"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM admin_config WHERE id = 1")
             row = await cursor.fetchone()
@@ -1796,7 +1814,7 @@ class Database:
     # Proxy config operations
     async def get_proxy_config(self) -> ProxyConfig:
         """Get proxy configuration"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM proxy_config WHERE id = 1")
             row = await cursor.fetchone()
@@ -1848,7 +1866,7 @@ class Database:
     # Watermark-free config operations
     async def get_watermark_free_config(self) -> WatermarkFreeConfig:
         """Get watermark-free configuration"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM watermark_free_config WHERE id = 1")
             row = await cursor.fetchone()
@@ -1893,7 +1911,7 @@ class Database:
     # Cache config operations
     async def get_cache_config(self) -> CacheConfig:
         """Get cache configuration"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM cache_config WHERE id = 1")
             row = await cursor.fetchone()
@@ -1945,7 +1963,7 @@ class Database:
     # Generation config operations
     async def get_generation_config(self) -> GenerationConfig:
         """Get generation configuration"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM generation_config WHERE id = 1")
             row = await cursor.fetchone()
@@ -1983,7 +2001,7 @@ class Database:
     # Token refresh config operations
     async def get_token_refresh_config(self) -> TokenRefreshConfig:
         """Get token refresh configuration"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM token_refresh_config WHERE id = 1")
             row = await cursor.fetchone()
@@ -2018,7 +2036,7 @@ class Database:
     # Cloudflare Solver config operations
     async def get_cloudflare_solver_config(self) -> CloudflareSolverConfig:
         """Get Cloudflare Solver configuration"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM cloudflare_solver_config WHERE id = 1")
             row = await cursor.fetchone()
@@ -2091,7 +2109,7 @@ class Database:
 
     async def get_character_by_cameo_id(self, cameo_id: str) -> Optional[Character]:
         """Get character by cameo_id"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute(
                 "SELECT * FROM characters WHERE cameo_id = ?", (cameo_id,)
@@ -2103,7 +2121,7 @@ class Database:
 
     async def get_character_by_id(self, character_db_id: int) -> Optional[Character]:
         """Get character by database id"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute(
                 "SELECT * FROM characters WHERE id = ?", (character_db_id,)
@@ -2115,7 +2133,7 @@ class Database:
 
     async def get_characters_by_token_id(self, token_id: int) -> List[Character]:
         """Get all characters for a specific token"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute(
                 "SELECT * FROM characters WHERE token_id = ? ORDER BY created_at DESC", (token_id,)
@@ -2125,7 +2143,7 @@ class Database:
 
     async def get_all_characters(self) -> List[Character]:
         """Get all characters"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute(
                 "SELECT * FROM characters ORDER BY created_at DESC"
@@ -2186,7 +2204,7 @@ class Database:
 
     async def get_webdav_config(self) -> WebDAVConfig:
         """Get WebDAV configuration"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM webdav_config WHERE id = 1")
             row = await cursor.fetchone()
@@ -2262,7 +2280,7 @@ class Database:
 
     async def get_video_record(self, record_id: int) -> Optional[VideoRecord]:
         """Get video record by ID"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM video_records WHERE id = ?", (record_id,))
             row = await cursor.fetchone()
@@ -2272,7 +2290,7 @@ class Database:
 
     async def get_video_record_by_task_id(self, task_id: str) -> Optional[VideoRecord]:
         """Get video record by task ID"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("SELECT * FROM video_records WHERE task_id = ?", (task_id,))
             row = await cursor.fetchone()
@@ -2282,7 +2300,7 @@ class Database:
 
     async def get_all_video_records(self, limit: int = 100, status: str = None) -> List[VideoRecord]:
         """Get all video records with optional status filter"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             if status:
                 cursor = await db.execute(
@@ -2299,7 +2317,7 @@ class Database:
 
     async def get_video_records_for_auto_delete(self, days: int) -> List[VideoRecord]:
         """Get video records older than specified days for auto deletion"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             # Use database-specific date arithmetic
             if self.db_type == "mysql":
@@ -2354,7 +2372,7 @@ class Database:
 
     async def get_video_records_stats(self) -> dict:
         """Get video records statistics"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             cursor = await db.execute("""
                 SELECT 
                     COUNT(*) as total,
@@ -2398,7 +2416,7 @@ class Database:
 
     async def get_upload_logs(self, limit: int = 100) -> List[dict]:
         """Get recent upload logs with video record info"""
-        async with self._connect() as db:
+        async with self._connect(readonly=True) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("""
                 SELECT 

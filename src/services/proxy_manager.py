@@ -156,6 +156,18 @@ class ProxyManager:
         # Unknown format
         print(f"⚠️ Unknown proxy format: {line}")
         return None
+
+    def normalize_proxy_url(self, proxy_url: Optional[str]) -> Optional[str]:
+        """Normalize proxy URL to a standard format"""
+        if not proxy_url:
+            return None
+        proxy_url = proxy_url.strip()
+        if not proxy_url:
+            return None
+        parsed = self._parse_proxy_line(proxy_url)
+        if not parsed:
+            raise ValueError(f"Invalid proxy_url format: {proxy_url}")
+        return parsed
     
     async def get_proxy_url(self, token_id: Optional[int] = None) -> Optional[str]:
         """Get proxy URL if enabled, with pool rotation support
@@ -189,7 +201,8 @@ class ProxyManager:
     
     async def update_proxy_config(self, enabled: bool, proxy_url: Optional[str], proxy_pool_enabled: bool = False):
         """Update proxy configuration"""
-        await self.db.update_proxy_config(enabled, proxy_url, proxy_pool_enabled)
+        normalized_proxy = self.normalize_proxy_url(proxy_url)
+        await self.db.update_proxy_config(enabled, normalized_proxy, proxy_pool_enabled)
         
         # Reset proxy pool when config changes
         async with self._pool_lock:

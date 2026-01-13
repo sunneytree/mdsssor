@@ -190,6 +190,7 @@ ip:port:user:pass
 | `/v1/videos/{id}/remix` | POST | 视频 Remix（new-api 兼容） |
 | `/v1/images/generations` | POST | 图片生成 |
 | `/v1/characters` | POST | 角色创建 |
+| `/v1/enhance_prompt` | POST | 提示词增强 |
 | `/v1/stats` | GET | 系统统计 |
 | `/v1/feed` | GET | 公共 Feed |
 | `/api/tokens` | GET/POST | Token 管理 |

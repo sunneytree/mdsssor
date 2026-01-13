@@ -2,6 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from typing import Optional
+from pydantic import BaseModel
 import random
 import aiohttp
 import base64
@@ -22,6 +23,12 @@ def set_dependencies(tm: TokenManager, database: Database, gh=None):
     token_manager = tm
     db = database
     generation_handler = gh
+
+
+class EnhancePromptRequest(BaseModel):
+    prompt: str
+    expansion_level: str = "medium"
+    duration_s: Optional[int] = None
 
 
 # ============================================================
@@ -107,6 +114,63 @@ async def get_random_invite_code(api_key: str = Depends(verify_api_key_header)):
 # ============================================================
 # Public API Endpoints (API Key authentication)
 # ============================================================
+
+@router.post("/v1/enhance_prompt")
+async def enhance_prompt(
+    body: EnhancePromptRequest,
+    token_id: int = None,
+    api_key: str = Depends(verify_api_key_header)
+):
+    """Enhance prompt via Sora editor endpoint
+
+    Args:
+        body: Request payload with prompt, expansion_level, duration_s
+        token_id: Optional token ID to use (uses first available if not specified)
+
+    Returns:
+        Enhanced prompt response from Sora
+    """
+    try:
+        if not body.prompt:
+            raise HTTPException(status_code=400, detail="prompt is required")
+
+        expansion_level = (body.expansion_level or "medium").lower()
+        if expansion_level not in ["short", "medium", "long"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid expansion_level. Must be short, medium, or long"
+            )
+
+        if body.duration_s is not None and body.duration_s not in [10, 15]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid duration_s. Must be 10 or 15"
+            )
+
+        if token_id:
+            token_obj = await token_manager.get_token_by_id(token_id)
+            if not token_obj:
+                raise HTTPException(status_code=404, detail="Token not found")
+        else:
+            tokens = await db.get_all_tokens()
+            active_tokens = [t for t in tokens if t.is_active]
+            if not active_tokens:
+                raise HTTPException(status_code=404, detail="No active tokens available")
+            token_obj = active_tokens[0]
+
+        result = await generation_handler.sora_client.enhance_prompt(
+            prompt=body.prompt,
+            token=token_obj.token,
+            expansion_level=expansion_level,
+            duration_s=body.duration_s
+        )
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_message = str(e) or "Failed to enhance prompt"
+        raise HTTPException(status_code=500, detail=error_message)
 
 @router.get("/v1/profiles/{username}")
 async def get_user_profile(
