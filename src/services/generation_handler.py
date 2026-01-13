@@ -813,6 +813,7 @@ class GenerationHandler:
         base_poll_interval = config.poll_interval  # Fallback for image generation
         
         last_progress = 0
+        last_db_progress = 0
         start_time = time.time()
         last_heartbeat_time = start_time  # Track last heartbeat for image generation
         heartbeat_interval = 10  # Send heartbeat every 10 seconds for image generation
@@ -893,6 +894,15 @@ class GenerationHandler:
                                 progress_pct = int(progress_pct * 100)
 
                             status = task.get("status", "processing")
+
+                            if progress_pct != last_db_progress:
+                                last_db_progress = progress_pct
+                                try:
+                                    await self.db.update_task(task_id, "processing", progress_pct)
+                                except Exception as update_error:
+                                    debug_logger.log_info(
+                                        f"Failed to update task progress for {task_id}: {update_error}"
+                                    )
                             
                             # Record progress for adaptive polling (stall detection)
                             # Requirements: 1.5 - detect stall when no progress for 3 consecutive polls

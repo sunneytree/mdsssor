@@ -8,7 +8,7 @@
 
 ## 项目介绍
 
-Sora2API 是一个 OpenAI 兼容的 Sora API 服务，支持文生图、文生视频、图生视频、视频 Remix、角色创建等功能。
+Sora2API 是一个 OpenAI 兼容的 Sora API 服务，支持文生图、文生视频、图生视频、视频 Remix、角色创建等功能，提供流式进度与任务状态查询。
 
 **✅ 已兼容 [new-api](https://github.com/Calcium-Ion/new-api) sora2 渠道对接格式**
 
@@ -19,10 +19,13 @@ Sora2API 是一个 OpenAI 兼容的 Sora API 服务，支持文生图、文生�
 - 视频 Remix（基于已有视频二次创作）
 - 视频分镜（Storyboard）
 - 角色卡创建与引用
+- OpenAI `/v1/chat/completions` 兼容（SSE 流式输出）
+- 任务进度查询（pending/v2 + task_id）
 - Token 池管理与自动轮询
 - 代理配置（支持单代理和代理池轮询）
 - 代理池检测（自动检测并移除无效代理）
 - 无水印模式
+- 任务日志与进度追踪（管理后台可查看）
 - 管理后台
 
 ### 批量操作功能
@@ -37,8 +40,9 @@ Sora2API 是一个 OpenAI 兼容的 Sora API 服务，支持文生图、文生�
 
 - 自适应轮询机制（根据进度动态调整间隔）
 - 停滞检测（避免无效请求）
-- 并发控制（批量操作限流）
+- 并发控制（token 级别图片/视频并发限制）
 - Token 缓存（减少数据库查询）
+- 任务进度写入数据库（日志可实时展示）
 
 ---
 
@@ -105,7 +109,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-**管理后台**: http://localhost:8000 (默认账号: admin/admin)
+**管理后台**: http://localhost:8000/login (默认账号: admin/admin)
 
 **默认 API Key**: `han1234`
 
@@ -137,8 +141,14 @@ python main.py
 │   │   └── models.py      # 数据模型
 │   └── services/          # 业务服务
 │       ├── generation_handler.py # 生成处理
+│       ├── concurrency_manager.py # 并发控制
+│       ├── load_balancer.py      # 负载均衡/令牌选择
+│       ├── file_cache.py         # 文件缓存
+│       ├── cloudflare_solver.py  # CF Solver 支持
 │       ├── proxy_manager.py      # 代理管理
 │       ├── sora_client.py        # Sora 客户端
+│       ├── token_cache.py        # Token 缓存
+│       ├── token_lock.py         # Token 锁
 │       └── token_manager.py      # Token 管理
 ├── static/                 # 静态文件
 │   ├── login.html         # 登录页面
@@ -191,10 +201,18 @@ ip:port:user:pass
 | `/v1/images/generations` | POST | 图片生成 |
 | `/v1/characters` | POST | 角色创建 |
 | `/v1/enhance_prompt` | POST | 提示词增强 |
+| `/v1/tokens/{token_id}/pending-tasks` | GET | 任务列表（v1） |
+| `/v1/tokens/{token_id}/pending-tasks-v2` | GET | 任务列表（v2，含进度） |
+| `/v1/tokens/{token_id}/tasks/{task_id}` | GET | 任务进度查询 |
 | `/v1/stats` | GET | 系统统计 |
 | `/v1/feed` | GET | 公共 Feed |
 | `/api/tokens` | GET/POST | Token 管理 |
 | `/api/login` | POST | 管理员登录 |
+| `/api/logs` | GET | 请求日志（含任务状态/进度） |
+| `/api/proxy/config` | GET/POST | 代理配置 |
+| `/api/watermark-free/config` | GET/POST | 无水印配置 |
+| `/api/cache/config` | GET/POST | 缓存配置 |
+| `/api/cloudflare/config` | GET/POST | Cloudflare Solver 配置 |
 
 ---
 
