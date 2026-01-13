@@ -421,6 +421,7 @@ class Database:
             count = await cursor.fetchone()
             if self._get_count_value(count) == 0:
                 lambda_enabled = False
+                lambda_api_urls = None
                 lambda_api_url = None
                 lambda_api_key = None
 
@@ -431,11 +432,15 @@ class Database:
                     lambda_api_key = lambda_config.get("api_key", "")
                     lambda_api_url = lambda_api_url if lambda_api_url else None
                     lambda_api_key = lambda_api_key if lambda_api_key else None
+                    
+                    # Convert single URL to URLs array for consistency
+                    if lambda_api_url:
+                        lambda_api_urls = json.dumps([lambda_api_url])
 
                 await db.execute("""
-                    INSERT INTO lambda_config (id, lambda_enabled, lambda_api_url, lambda_api_key)
-                    VALUES (1, ?, ?, ?)
-                """, (lambda_enabled, lambda_api_url, lambda_api_key))
+                    INSERT INTO lambda_config (id, lambda_enabled, lambda_api_urls, lambda_api_url, lambda_api_key)
+                    VALUES (1, ?, ?, ?, ?)
+                """, (lambda_enabled, lambda_api_urls, lambda_api_url, lambda_api_key))
 
         # Ensure cloudflare_solver_config has a row
         if await self._table_exists(db, "cloudflare_solver_config"):
@@ -472,7 +477,7 @@ class Database:
         
         使用版本号机制，只在版本变化时执行完整迁移检查
         """
-        CURRENT_DB_VERSION = 8  # 增加此版本号以触发迁移
+        CURRENT_DB_VERSION = 9  # 增加此版本号以触发迁移
         
         db = await self._get_connection()
         try:
@@ -540,6 +545,7 @@ class Database:
             ("proxy_config", "proxy_pool_enabled", "BOOLEAN DEFAULT 0"),
             ("request_logs", "task_id", "TEXT"),
             ("request_logs", "updated_at", "TIMESTAMP"),
+            ("lambda_config", "lambda_api_urls", "TEXT"),
         ]
         
         for table, col, col_type in migrations:
@@ -555,6 +561,7 @@ class Database:
                 CREATE TABLE IF NOT EXISTS lambda_config (
                     id INTEGER PRIMARY KEY DEFAULT 1,
                     lambda_enabled BOOLEAN DEFAULT 0,
+                    lambda_api_urls TEXT,
                     lambda_api_url TEXT,
                     lambda_api_key TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -2085,28 +2092,37 @@ class Database:
             cursor = await db.execute("SELECT * FROM lambda_config WHERE id = 1")
             row = await cursor.fetchone()
             if row:
-                return LambdaConfig(**dict(row))
+                config_dict = dict(row)
+                # Handle backward compatibility: if lambda_api_urls is None but lambda_api_url exists
+                if not config_dict.get("lambda_api_urls") and config_dict.get("lambda_api_url"):
+                    config_dict["lambda_api_urls"] = json.dumps([config_dict["lambda_api_url"]])
+                return LambdaConfig(**config_dict)
             return LambdaConfig(lambda_enabled=False)
 
-    async def update_lambda_config(self, lambda_enabled: bool, lambda_api_url: Optional[str] = None,
+    async def update_lambda_config(self, lambda_enabled: bool, lambda_api_urls: Optional[List[str]] = None,
                                    lambda_api_key: Optional[str] = None):
-        """Update Lambda configuration"""
+        """Update Lambda configuration with URL polling support"""
         async with self._connect() as db:
             cursor = await db.execute("SELECT COUNT(*) FROM lambda_config WHERE id = 1")
             count = await cursor.fetchone()
             row_exists = self._get_count_value(count) > 0
 
+            # Convert URLs list to JSON string
+            urls_json = json.dumps(lambda_api_urls) if lambda_api_urls else None
+            # Keep first URL for backward compatibility
+            first_url = lambda_api_urls[0] if lambda_api_urls else None
+
             if not row_exists:
                 await db.execute("""
-                    INSERT INTO lambda_config (id, lambda_enabled, lambda_api_url, lambda_api_key)
-                    VALUES (1, ?, ?, ?)
-                """, (lambda_enabled, lambda_api_url, lambda_api_key))
+                    INSERT INTO lambda_config (id, lambda_enabled, lambda_api_urls, lambda_api_url, lambda_api_key)
+                    VALUES (1, ?, ?, ?, ?)
+                """, (lambda_enabled, urls_json, first_url, lambda_api_key))
             else:
                 await db.execute("""
                     UPDATE lambda_config
-                    SET lambda_enabled = ?, lambda_api_url = ?, lambda_api_key = ?, updated_at = CURRENT_TIMESTAMP
+                    SET lambda_enabled = ?, lambda_api_urls = ?, lambda_api_url = ?, lambda_api_key = ?, updated_at = CURRENT_TIMESTAMP
                     WHERE id = 1
-                """, (lambda_enabled, lambda_api_url, lambda_api_key))
+                """, (lambda_enabled, urls_json, first_url, lambda_api_key))
             await db.commit()
 
     # Cloudflare Solver config operations

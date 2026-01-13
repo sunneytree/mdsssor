@@ -217,7 +217,7 @@ class UpdateCloudflareSolverConfigRequest(BaseModel):
 
 class UpdateLambdaConfigRequest(BaseModel):
     lambda_enabled: bool
-    lambda_api_url: Optional[str] = None
+    lambda_api_urls: Optional[List[str]] = None  # List of URLs for round-robin polling
     lambda_api_key: Optional[str] = None
 
 # Auth endpoints
@@ -1398,12 +1398,27 @@ async def get_lambda_config(token: str = Depends(verify_admin_token)):
     """Get Lambda configuration"""
     try:
         config_obj = await db.get_lambda_config()
+        
+        # Parse URLs from JSON string
+        lambda_api_urls = []
+        if config_obj.lambda_api_urls:
+            try:
+                lambda_api_urls = json.loads(config_obj.lambda_api_urls)
+            except:
+                lambda_api_urls = []
+        
+        # Backward compatibility: if no URLs but has single URL
+        if not lambda_api_urls and config_obj.lambda_api_url:
+            lambda_api_urls = [config_obj.lambda_api_url]
+        
         return {
             "success": True,
             "config": {
                 "lambda_enabled": config_obj.lambda_enabled,
-                "lambda_api_url": config_obj.lambda_api_url,
-                "lambda_api_key": config_obj.lambda_api_key
+                "lambda_api_urls": lambda_api_urls,
+                "lambda_api_key": config_obj.lambda_api_key,
+                # Keep for backward compatibility
+                "lambda_api_url": config_obj.lambda_api_url
             }
         }
     except Exception as e:
@@ -1414,16 +1429,22 @@ async def update_lambda_config(
     request: UpdateLambdaConfigRequest,
     token: str = Depends(verify_admin_token)
 ):
-    """Update Lambda configuration"""
+    """Update Lambda configuration with URL polling support"""
     try:
-        if request.lambda_enabled and not request.lambda_api_url:
-            raise HTTPException(status_code=400, detail="Lambda API URL is required when enabled")
+        if request.lambda_enabled and not request.lambda_api_urls:
+            raise HTTPException(status_code=400, detail="Lambda API URLs are required when enabled")
         if request.lambda_enabled and not request.lambda_api_key:
             raise HTTPException(status_code=400, detail="Lambda API key is required when enabled")
+        
+        # Validate URLs
+        if request.lambda_api_urls:
+            for url in request.lambda_api_urls:
+                if not url.startswith(("http://", "https://")):
+                    raise HTTPException(status_code=400, detail=f"Invalid URL format: {url}")
 
         await db.update_lambda_config(
             lambda_enabled=request.lambda_enabled,
-            lambda_api_url=request.lambda_api_url,
+            lambda_api_urls=request.lambda_api_urls,
             lambda_api_key=request.lambda_api_key
         )
 

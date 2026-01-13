@@ -240,16 +240,10 @@ async def create_chat_completion(
         # Handle streaming
         if request.stream:
             use_lambda = False
-            lambda_url = None
-            lambda_key = None
             if is_video_model and not video_data and not remix_target_id:
                 if not generation_handler.sora_client.is_storyboard_prompt(prompt):
-                    from ..core.database import Database
-                    db = Database()
-                    lambda_config = await db.get_lambda_config()
-                    use_lambda = bool(lambda_config.lambda_enabled and lambda_config.lambda_api_url and lambda_config.lambda_api_key)
-                    lambda_url = lambda_config.lambda_api_url
-                    lambda_key = lambda_config.lambda_api_key
+                    from ..services.lambda_manager import lambda_manager
+                    use_lambda = await lambda_manager.is_enabled()
 
             async def generate():
                 has_error = False
@@ -263,9 +257,7 @@ async def create_chat_completion(
                             image_data=image_data,
                             style_id=request.style_id,
                             model_id=request.model,
-                            model_config=model_config,
-                            lambda_url=lambda_url,
-                            lambda_key=lambda_key
+                            model_config=model_config
                         )
                     else:
                         gen = generation_handler.handle_generation(
@@ -748,8 +740,10 @@ async def _poll_lambda_task_result(task_id: str, token_obj, prompt: str,
 
 
 async def _lambda_video_generation_stream(prompt: str, image_data: Optional[str], style_id: Optional[str],
-                                          model_id: str, model_config: dict,
-                                          lambda_url: str, lambda_key: Optional[str]):
+                                          model_id: str, model_config: dict):
+    """Generate video using Lambda with URL polling"""
+    from ..services.lambda_manager import lambda_manager
+    
     token_obj = await generation_handler.load_balancer.select_token(for_video_generation=True)
     if not token_obj:
         raise HTTPException(status_code=400, detail="No available tokens for video generation")
@@ -798,9 +792,8 @@ async def _lambda_video_generation_stream(prompt: str, image_data: Optional[str]
             size=model_config.get("size", "small")
         )
 
-        task_id = await _post_lambda_create_task(
-            lambda_url=lambda_url,
-            lambda_key=lambda_key,
+        # Use Lambda manager for URL polling
+        task_id = await lambda_manager.create_task(
             token=token_obj.token,
             payload=payload
         )
