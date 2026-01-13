@@ -1397,28 +1397,20 @@ async def update_generation_timeout(
 async def get_lambda_config(token: str = Depends(verify_admin_token)):
     """Get Lambda configuration"""
     try:
-        config_obj = await db.get_lambda_config()
-        
-        # Parse URLs from JSON string
-        lambda_api_urls = []
-        if config_obj.lambda_api_urls:
-            try:
-                lambda_api_urls = json.loads(config_obj.lambda_api_urls)
-            except:
-                lambda_api_urls = []
-        
-        # Backward compatibility: if no URLs but has single URL
-        if not lambda_api_urls and config_obj.lambda_api_url:
-            lambda_api_urls = [config_obj.lambda_api_url]
+        configs = await db.get_lambda_configs()
+        lambda_api_urls = [cfg.lambda_api_url for cfg in configs if cfg.lambda_api_url]
+        lambda_enabled = any(cfg.lambda_enabled for cfg in configs)
+        lambda_api_key = next((cfg.lambda_api_key for cfg in configs if cfg.lambda_api_key), None)
+        lambda_api_url = lambda_api_urls[0] if lambda_api_urls else None
         
         return {
             "success": True,
             "config": {
-                "lambda_enabled": config_obj.lambda_enabled,
+                "lambda_enabled": lambda_enabled,
                 "lambda_api_urls": lambda_api_urls,
-                "lambda_api_key": config_obj.lambda_api_key,
+                "lambda_api_key": lambda_api_key,
                 # Keep for backward compatibility
-                "lambda_api_url": config_obj.lambda_api_url
+                "lambda_api_url": lambda_api_url
             }
         }
     except Exception as e:

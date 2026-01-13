@@ -1000,13 +1000,9 @@ async def create_video(
             from ..services.lambda_manager import lambda_manager
 
             db = Database()
-            lambda_enabled = await lambda_manager.is_enabled()
-            lambda_urls = await lambda_manager.get_all_urls()
-            lambda_key = await lambda_manager.get_api_key()
+            has_lambda = await lambda_manager.has_available_endpoints()
             can_use_lambda = (
-                lambda_enabled
-                and lambda_urls
-                and lambda_key
+                has_lambda
                 and not remix_target_id
                 and not generation_handler.sora_client.is_storyboard_prompt(prompt)
             )
