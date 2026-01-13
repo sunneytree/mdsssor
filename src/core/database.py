@@ -405,6 +405,22 @@ class Database:
         except Exception as e:
             print(f"  ⚠️ Failed to create token_stats unique index: {e}")
 
+    async def _ensure_request_logs_indexes(self, db):
+        if not await self._table_exists(db, "request_logs"):
+            return
+        if self.db_type == "mysql":
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs(created_at)")
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_created ON request_logs(task_id(191), status_code, created_at)"
+            )
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_id ON request_logs(task_id(191), status_code, id)"
+            )
+        else:
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs(created_at)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_created ON request_logs(task_id, status_code, created_at)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_id ON request_logs(task_id, status_code, id)")
+
     async def _ensure_config_rows(self, db, config_dict: dict = None):
         """Ensure all config tables have their default rows
 
@@ -624,7 +640,7 @@ class Database:
             if db_version >= CURRENT_DB_VERSION:
                 await self._ensure_config_rows(db, config_dict)
                 await self._ensure_token_stats_unique_index(db)
-                await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_id ON request_logs(task_id, status_code, id)")
+                await self._ensure_request_logs_indexes(db)
                 await db.commit()
                 return
             
@@ -756,9 +772,7 @@ class Database:
         await db.execute("CREATE INDEX IF NOT EXISTS idx_video_record_status ON video_records(status)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_upload_log_video_record_id ON upload_logs(video_record_id)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_token_email ON tokens(email)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs(created_at)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_created ON request_logs(task_id, status_code, created_at)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_id ON request_logs(task_id, status_code, id)")
+        await self._ensure_request_logs_indexes(db)
         
         # MySQL: 移除 tasks 表的外键约束，允许 token_id 为 NULL
         if self.db_type == "mysql":
@@ -1052,9 +1066,7 @@ class Database:
             await db.execute("CREATE INDEX IF NOT EXISTS idx_video_record_task_id ON video_records(task_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_video_record_status ON video_records(status)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_upload_log_video_record_id ON upload_logs(video_record_id)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs(created_at)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_created ON request_logs(task_id, status_code, created_at)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_task_status_id ON request_logs(task_id, status_code, id)")
+            await self._ensure_request_logs_indexes(db)
 
             # Migration: Add daily statistics columns if they don't exist
             if not await self._column_exists(db, "token_stats", "today_image_count"):
