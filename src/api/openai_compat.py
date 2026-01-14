@@ -795,7 +795,7 @@ async def _lambda_video_generation_stream(prompt: str, image_data: Optional[str]
             n_frames=n_frames,
             media_id=media_id,
             style_id=style_id,
-            model=model_config.get("model", "sy_8"),
+            model=model_config.get("model", "sy_8_20251208"),
             size=model_config.get("size", "small")
         )
 
@@ -1036,7 +1036,7 @@ async def create_video(
                         n_frames=n_frames,
                         media_id=media_id,
                         style_id=style_id,
-                        model=model_config.get("model", "sy_8"),
+                        model=model_config.get("model", "sy_8_20251208"),
                         size=model_config.get("size", "small")
                     )
 

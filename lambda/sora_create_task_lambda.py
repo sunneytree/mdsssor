@@ -201,6 +201,8 @@ def lambda_handler(event, context):
         "Authorization": f"Bearer {token}",
         "oai-device-id": generate_device_id(),
         "openai-sentinel-token": sentinel_token,
+        "oai-package-name": "com.openai.sora",
+        "oai-client-type": "android",
     }
 
     sora_url = sora_base.rstrip("/") + "/nf/create"

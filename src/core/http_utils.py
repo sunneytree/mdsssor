@@ -14,6 +14,10 @@ MOBILE_FINGERPRINTS = [
 # Sora App UA (Android)
 SORA_APP_USER_AGENT = "Sora/1.2026.007 (Android 15; 24122RKC7C; build 2600700)"
 
+# Sora App 标识头
+SORA_APP_PACKAGE_NAME = "com.openai.sora"
+SORA_APP_CLIENT_TYPE = "android"
+
 # 手机 UA 列表 (Sora App)
 MOBILE_USER_AGENTS = [
     SORA_APP_USER_AGENT,
@@ -26,6 +30,8 @@ CHROME_HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
     "Origin": "https://sora.chatgpt.com",
     "Referer": "https://sora.chatgpt.com/",
+    "oai-package-name": SORA_APP_PACKAGE_NAME,
+    "oai-client-type": SORA_APP_CLIENT_TYPE,
 }
 
 # 默认 UA

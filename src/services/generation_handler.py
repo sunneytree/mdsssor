@@ -181,21 +181,21 @@ MODEL_CONFIG = {
         "type": "video",
         "orientation": "landscape",
         "n_frames": 750,
-        "model": "sy_8",
+        "model": "sy_8_20251208",
         "size": "small"
     },
     "sora-video-landscape-25s": {
         "type": "video",
         "orientation": "landscape",
         "n_frames": 750,
-        "model": "sy_8",
+        "model": "sy_8_20251208",
         "size": "small"
     },
     "sora-video-portrait-25s": {
         "type": "video",
         "orientation": "portrait",
         "n_frames": 750,
-        "model": "sy_8",
+        "model": "sy_8_20251208",
         "size": "small"
     },
     # Sora2 aliases (same as sora-video-*)
@@ -233,21 +233,21 @@ MODEL_CONFIG = {
         "type": "video",
         "orientation": "landscape",
         "n_frames": 750,
-        "model": "sy_8",
+        "model": "sy_8_20251208",
         "size": "small"
     },
     "sora2-landscape-25s": {
         "type": "video",
         "orientation": "landscape",
         "n_frames": 750,
-        "model": "sy_8",
+        "model": "sy_8_20251208",
         "size": "small"
     },
     "sora2-portrait-25s": {
         "type": "video",
         "orientation": "portrait",
         "n_frames": 750,
-        "model": "sy_8",
+        "model": "sy_8_20251208",
         "size": "small"
     },
     # Simple sora-2 alias (default to 10s landscape)
@@ -620,7 +620,7 @@ class GenerationHandler:
                         media_id=media_id,
                         n_frames=n_frames,
                         style_id=style_id,
-                        model=model_config.get("model", "sy_8"),
+                        model=model_config.get("model", "sy_8_20251208"),
                         size=model_config.get("size", "small")
                     )
             else:
@@ -2056,7 +2056,7 @@ class GenerationHandler:
                 full_prompt, token_obj.token,
                 orientation=model_config["orientation"],
                 n_frames=n_frames,
-                model=model_config.get("model", "sy_8"),
+                model=model_config.get("model", "sy_8_20251208"),
                 size=model_config.get("size", "small")
             )
             debug_logger.log_info(f"Video generation started, task_id: {task_id}")

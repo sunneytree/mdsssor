@@ -630,7 +630,7 @@ class SoraClient:
     async def generate_video(self, prompt: str, token: str, orientation: str = "landscape",
                             media_id: Optional[str] = None, n_frames: int = 450,
                             style_id: Optional[str] = None,
-                            model: str = "sy_8", size: str = "small") -> str:
+                            model: str = "sy_8_20251208", size: str = "small") -> str:
         """Generate video (text-to-video or image-to-video)
         
         Args:
@@ -640,7 +640,7 @@ class SoraClient:
             media_id: Optional media ID for image-to-video
             n_frames: Number of frames (150=5s, 300=10s, 450=15s, 600=20s, 750=25s)
             style_id: Optional style ID (festive, retro, news, selfie, handheld, anime, comic, golden, vintage)
-            model: Model to use (sy_8 for standard, sy_ore for pro)
+            model: Model to use (sy_8_20251208 for standard, sy_ore for pro)
             size: Video size (small for standard, large for HD)
         """
         inpaint_items = []
@@ -1195,7 +1195,7 @@ class SoraClient:
             "metadata": None,
             "cameo_ids": None,
             "cameo_replacements": None,
-            "model": "sy_8",
+            "model": "sy_8_20251208",
             "style_id": None,
             "audio_caption": None,
             "audio_transcript": None,
@@ -1237,7 +1237,7 @@ class SoraClient:
             "storyboard_id": None,
             "inpaint_items": inpaint_items,
             "remix_target_id": None,
-            "model": "sy_8",
+            "model": "sy_8_20251208",
             "metadata": None,
             "style_id": None,
             "cameo_ids": None,
