@@ -524,6 +524,8 @@ async def _process_video_generation_v2(video_id: str):
         
         # Generate video
         result_url = None
+        failure_message = None
+        failure_code = None
         last_chunk = None
         chunk_count = 0
         
@@ -538,6 +540,12 @@ async def _process_video_generation_v2(video_id: str):
             chunk_count += 1
             if isinstance(chunk, str):
                 last_chunk = chunk
+
+                if "Content policy violation" in chunk:
+                    failure_message = chunk
+                    failure_code = "content_policy_violation"
+                    break
+
                 # Extract progress percentage if present
                 match = re.search(r'(\d+)%', chunk)
                 if match:
@@ -594,10 +602,39 @@ async def _process_video_generation_v2(video_id: str):
                     if any_url_match:
                         result_url = any_url_match.group(1)
                         print(f"[VideoTask] {video_id}: Found URL with pattern 4: {result_url[:100]}...")
-        
+
+                if not failure_message and chunk.startswith("data: ") and chunk != "data: [DONE]\n\n":
+                    try:
+                        data = json.loads(chunk[6:])
+                        error = None
+                        if isinstance(data, dict):
+                            error = data.get("error")
+                        if isinstance(error, dict) and error.get("message"):
+                            failure_message = str(error.get("message"))
+                            failure_code = str(error.get("code") or "generation_failed")
+                            break
+                    except Exception:
+                        pass
+
         print(f"[VideoTask] {video_id}: Generation loop finished. chunk_count={chunk_count}, result_url={result_url is not None}")
         if last_chunk:
             print(f"[VideoTask] {video_id}: Last chunk (truncated): {last_chunk[:200]}...")
+
+        if failure_message:
+            task_info["status"] = "failed"
+            task_info["progress"] = 0
+            task_info["completed_at"] = int(time.time())
+            task_info["result_url"] = None
+            task_info["error"] = {
+                "message": failure_message,
+                "code": failure_code or "generation_failed",
+            }
+            try:
+                await db.update_task(video_id, "failed", 0.0, error_message=failure_message)
+            except Exception:
+                pass
+            print(f"[VideoTask] {video_id}: Task failed. error={failure_code}")
+            return
         
         # Try to get result from database if not found in stream
         if not result_url:
@@ -614,6 +651,23 @@ async def _process_video_generation_v2(video_id: str):
                             result_url = db_task.result_urls
                         print(f"[VideoTask] {video_id}: Found URL in database: {result_url[:100] if result_url else 'None'}...")
                         break
+
+        if not result_url:
+            failure_message = "Video generation completed but no result URL is available"
+            task_info["status"] = "failed"
+            task_info["progress"] = 0
+            task_info["completed_at"] = int(time.time())
+            task_info["result_url"] = None
+            task_info["error"] = {
+                "message": failure_message,
+                "code": "content_not_found",
+            }
+            try:
+                await db.update_task(video_id, "failed", 0.0, error_message=failure_message)
+            except Exception:
+                pass
+            print(f"[VideoTask] {video_id}: Task failed. reason=no_result_url")
+            return
         
         # Mark as completed (use new-api-main compatible status)
         print(f"[VideoTask] {video_id}: Marking as completed. result_url={result_url is not None}")
@@ -623,10 +677,7 @@ async def _process_video_generation_v2(video_id: str):
         task_info["result_url"] = result_url
         
         # Update database
-        if result_url:
-            await db.update_task(video_id, "completed", 100.0, result_urls=result_url)
-        else:
-            await db.update_task(video_id, "completed", 100.0)
+        await db.update_task(video_id, "completed", 100.0, result_urls=result_url)
         
         print(f"[VideoTask] {video_id}: Task completed successfully. Status in memory: {task_info['status']}")
     
@@ -1332,6 +1383,17 @@ async def get_video_content(
     # First check in-memory tasks
     task_info = _video_tasks.get(video_id)
     if task_info and isinstance(task_info, dict):
+        if task_info.get("status") == "failed":
+            err = task_info.get("error")
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": {
+                        "message": (err or {}).get("message") or "Video generation failed",
+                        "code": (err or {}).get("code") or "generation_failed",
+                    }
+                },
+            )
         if task_info["status"] != "completed":
             raise HTTPException(
                 status_code=400, 
